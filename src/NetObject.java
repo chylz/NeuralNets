@@ -7,7 +7,6 @@
 
 public class NetObject {
    private int inputNodes; // number of input nodes
-   private int outputNodes; // number of output nodes.
    private int hiddenLayerNodes; //number of hidden layer nodes.
    private int[] a; // Input activations
    private int[] h; // Hidden activations
@@ -20,7 +19,8 @@ public class NetObject {
     */
    public NetObject(int A, int B)
    {
-
+      inputNodes = A;
+      hiddenLayerNodes = B;
    }
 
    /*

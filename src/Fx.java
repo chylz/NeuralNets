@@ -14,5 +14,13 @@ public class Fx implements ActivationFunction
    {
       return arg;//temp value
    }
+
+   /*
+    * dummy derivative function (won't actually train).
+    */
+   public double derivative(double arg)
+   {
+      return 1;
+   }
 } //public class Fx implements ActivationFunction
 

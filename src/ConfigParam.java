@@ -10,23 +10,39 @@ public class ConfigParam
    public int numInputNodes;
    public int numHiddenNodes;
    public int numOutNodes;
-   public int populationMethod;
+   public int populationMethod;//Population method --> 0: randomize weights | 1: manually set weights
    public boolean train;
    public double minRand;
    public double maxRand;
-   public double avgErrCut;
+   public double avgErrCut; // average error cutoff.
    public int maxCycles;
+
+   //Truth Table arrays
+   public double[][] ttInputs;
+   public double[] ttExpectedOutputs;
+   public int ttNumCases;
+
+
+
 
 
    /*
-    * initializes an empty configuration parameters object with some default values
-    * (default values are lambda = 0.3 and minRand, maxRand = -1.5, 1.5)
+    * initializes an empty configuration parameters object.
     */
    public ConfigParam()
    {
-      lambda = 0.3;
-      minRand = 1.5;
-      maxRand = -1.5;
+      //empty for now.
    }
 
-}
+
+   /*
+    * returns a pretty-printing formatted version of the configuration parameters.
+    */
+   public String toString()
+   {
+      return "lambda:" + lambda + " | numInputNodes:" + numInputNodes + " | numOutputNodes:" + numOutNodes +
+             " | numHiddenNodes:" + numHiddenNodes + " | populationMethod:" + populationMethod + " | minRand:" + minRand +
+             " | maxRand:" + maxRand + " | avgErrCut:" + avgErrCut + " | maxCycles:" + maxCycles + " |";
+   }
+
+} //public class ConfigParam

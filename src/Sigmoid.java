@@ -14,4 +14,12 @@ public class Sigmoid implements ActivationFunction
    {
       return 0.0;//temp value
    }
+
+   /*
+    * Returns f'(x)
+    */
+   public double derivative(double arg)
+   {
+      return funct(arg) * (1-funct(arg)); // sigmoid derivative.
+   }
 } //public class Sigmoid implements ActivationFunction

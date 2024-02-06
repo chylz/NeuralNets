@@ -11,4 +11,10 @@ public interface ActivationFunction
     * activation function, to be implemented by implementing classes.
     */
    public double funct(double arg);
+
+
+   /*
+    * derivative of the activation function, to be implemented by implementing classes.
+    */
+   public double derivative(double arg);
 }

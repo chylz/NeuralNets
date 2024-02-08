@@ -2,9 +2,10 @@
  * Author: Luke Zeng
  * Date of Creation: 1/24/2024
  *
- * Description: Object stores an A-B-1 Neural Network.
+ * Description: Object stores an A-B-1 Neural Network and contains the following operations on it.
+ *                 Construct a new
  */
-//CHANGE MAGIC NUMBER FOR 2D OUTPUT WEIGHTS ARRAY
+
 
 public class NetObject
 {
@@ -19,16 +20,6 @@ public class NetObject
    public ActivationFunction f; // activation function f(x)
 
 
-   /*
-    * Initializes an empty neural network object with no values for any fields (complete manipulation done by user)
-    */
-   public NetObject()
-   {
-      inputNodes = 0;
-      hiddenLayerNodes = 0;
-      outputNodes = 1;
-   }
-
 
    /*
     * Initializes an neural network object with edge weights 0 and given dimension
@@ -40,7 +31,7 @@ public class NetObject
     * Parameter expOut is the expected outputs of the truth table.
     * Parameter numcases is the number of cases in the Truth Table.
     */
-   public NetObject(int A, int B, ActivationFunction f1, double[][] In, double[] expOut, int numcases)
+   public NetObject(int A, int B, ActivationFunction f1)
    {
       inputNodes = A;
       hiddenLayerNodes = B;
@@ -49,35 +40,8 @@ public class NetObject
       w1kj = new double[inputNodes][hiddenLayerNodes];
       w2j0 = new double[hiddenLayerNodes];
       ak = new double[inputNodes];
-      hj = new double[inputNodes];
-   } //public NetObject(int A, int B, ActivationFunction f1, double[][] In, double[] expOut, int numcases)
-
-
-
-   /*
-    * Initializes a neural network object with given edge weights, dimensions, and activation function.
-    *
-    * Parameters A and B describe the number of input and hidden activation layers respectively.
-    * Parameter n1 represents the weights for activation layer n=1.--> format: n1[k][j]
-    * Parameter n2 represents the weights for activation layer n=2.--> format: n2[j]
-    * Parameter f1 is the activation function f(x).
-    */
-   public NetObject(int A, int B, double[][] n1, double[] n2, ActivationFunction f1)
-   {
-      inputNodes = A;
-      hiddenLayerNodes = B;
-      outputNodes = 1;
-      f = f1;
-      w1kj = new double[inputNodes][hiddenLayerNodes];
-      w2j0 = new double[hiddenLayerNodes];
-      ak = new double[inputNodes];
-      hj = new double[inputNodes];
-
-      setNetwork(n1, n2);
-   } //public NetObject(int A, int B, double[][] n1, double[] n2)
-
-
-
+      hj = new double[hiddenLayerNodes];
+   } //public NetObject(int A, int B, ActivationFunction f1)
 
 
 
@@ -95,12 +59,12 @@ public class NetObject
     */
    public void recalculate()
    {
-      for(int j = 0; j<hiddenLayerNodes; j++)//activation layer 1
+      for(int j = 0; j<hiddenLayerNodes; j++)//activation layer 2
       {
-         hj[j] = act(dotProduct(2, j));
+         hj[j] = act(THETA(2, j));//parameter of 2 refers to the hidden layer
       }
 
-      F0 = act(dotProduct(3, 0));
+      F0 = act(THETA(3, 0));//parameter of 3 refers to the output activation layer.
    }//public void recalculate()
 
 
@@ -110,25 +74,25 @@ public class NetObject
     * n=2 refers to hidden layer.
     * n=3 refers to output activation layer.
     */
-   public double dotProduct(int n, int a)
+   public double THETA(int n, int a)
    {
-      double sum = 0;
+      double sum = 0.0;
       if(n == 2)
       {
          for(int k = 0; k<inputNodes; k++)
          {
-            sum = sum + ak[k]*w1kj[k][a];
+            sum += ak[k]*w1kj[k][a];
          }
       }
       if(n == 3)
       {
          for (int j = 0; j < hiddenLayerNodes; j++)
          {
-            sum = sum + hj[j] * w1kj[j][a];
+            sum += hj[j] * w2j0[j];
          }
       }
       return sum;
-   } //public double dotProduct(int n, int a)
+   } //public double THETA(int n, int a)
 
 
 
@@ -151,25 +115,55 @@ public class NetObject
    public String dumpWeights()
    {
       String ret = "";
-
+      ret+="----------------------------------------------------------------------";
+      ret+= "\n";
       for(int k = 0; k<inputNodes; k++)
       {
+         ret+="| ";
          for(int j = 0; j<hiddenLayerNodes; j++)
          {
-            ret+=w1kj[k][j] + " ";
+            ret+= "w1" + k + j + ": " +  w1kj[k][j] + " | ";
          }
          ret+="\n";
       }
 
+      ret+="----------------------------------------------------------------------"; //separation between two  layers.
       ret+="\n";
 
       for(int j = 0; j<hiddenLayerNodes; j++)
       {
-         ret+=w2j0[j];
+         ret+="w2" + j + "" + 0 + ": " + w2j0[j] + " | ";
       }
+      ret+="\n";
+      ret+="----------------------------------------------------------------------";
 
       return ret;
    } //public String dumpWeights()
+
+
+   /*
+    * returns all the activation values as a string.
+    */
+   public String dumpVals()
+   {
+      String ret = "";
+      for(int k = 0; k<inputNodes; k++)
+      {
+         ret+= ak[k] + " ";
+      }
+      ret+="\n";
+
+      for(int j = 0; j<hiddenLayerNodes; j++) {
+         ret += hj[j] + " ";
+      }
+      ret+= "\n";
+
+
+
+      ret+=F0 + " ";
+
+      return ret;
+   } //public String dumpVals()
 
 
 
@@ -186,15 +180,70 @@ public class NetObject
          }
       }
 
-
       for(int j = 0; j<hiddenLayerNodes; j++)
       {
-         w2j0[j] = deltaw2j0[j];
+         w2j0[j] += deltaw2j0[j];
       }
-   } //public boolean applyDeltas(int[][] deltaw1kj, int[][] deltaw2j0)
+   } //public void applyDeltas(double[][] deltaw1kj, double[] deltaw2j0)
+
+
+   /*
+    * updates the input and calculates the output to a given input.
+    */
+   public double getOutput(double[] inp)
+   {
+      input(inp);
+      recalculate();
+      return F0;
+   }
 
 
 
+   /*
+    * sets all the weights in the network to the given input arrays
+    */
+   public void setNetwork(double[][] n1, double[] n2)
+   {
+      for (int k = 0; k < inputNodes; k++) //populate first weights
+      {
+         for (int j = 0; j < hiddenLayerNodes; j++)
+         {
+            w1kj[k][j] = n1[k][j];
+         }
+      }
+
+      for (int j = 0; j < hiddenLayerNodes; j++)
+      {
+         w2j0[j] = n2[j];
+      }
+   } //public void setNetwork(double[][] n1, double[] n2)
+
+
+   /*
+    * Deprecated
+    */
+
+   /*
+    * Initializes a neural network object with given edge weights, dimensions, and activation function.
+    *
+    * Parameters A and B describe the number of input and hidden activation layers respectively.
+    * Parameter n1 represents the weights for activation layer n=1.--> format: n1[k][j]
+    * Parameter n2 represents the weights for activation layer n=2.--> format: n2[j]
+    * Parameter f1 is the activation function f(x).
+    */
+   public NetObject(int A, int B, double[][] n1, double[] n2, ActivationFunction f1)
+   {
+      inputNodes = A;
+      hiddenLayerNodes = B;
+      outputNodes = 1;
+      f = f1;
+      w1kj = new double[inputNodes][hiddenLayerNodes];
+      w2j0 = new double[hiddenLayerNodes];
+      ak = new double[inputNodes];
+      hj = new double[hiddenLayerNodes];
+
+      setNetwork(n1, n2);
+   } //public NetObject(int A, int B, double[][] n1, double[] n2)
 
    /*
     * set the weight of an edge on activation layer n going from node a to b to w.
@@ -211,21 +260,13 @@ public class NetObject
 
 
    /*
-    * sets all the weights in the network to the given input arrays
+    * Initializes an empty neural network object with no values for any fields (complete manipulation done by user)
     */
-   public void setNetwork(double[][] n1, double[] n2)
+   public NetObject()
    {
-      for (int k = 0; k < inputNodes; k++) //populate first weights
-      {
-         for (int j = 0; j < hiddenLayerNodes; j++) {
-            w1kj[k][j] = n1[k][j];
-         }
-      }
-
-      for (int j = 0; j < hiddenLayerNodes; j++)
-      {
-         w2j0[j] = n2[j];
-      }
-   } //public void setNetwork(double[][] n1, double[] n2)
+      inputNodes = 0;
+      hiddenLayerNodes = 0;
+      outputNodes = 1;
+   }
 
 } //public class NetObject

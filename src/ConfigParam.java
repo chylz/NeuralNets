@@ -18,9 +18,9 @@ public class ConfigParam
    public int maxCycles;
 
    //Truth Table arrays
-   public double[][] ttInputs;
-   public double[] ttExpectedOutputs;
-   public int ttNumCases;
+   public double[][] givenInputs;
+   public double[] ExpectedOutputs;
+   public int numCases;
 
 
 

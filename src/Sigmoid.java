@@ -12,7 +12,7 @@ public class Sigmoid implements ActivationFunction
     */
    public double funct(double arg)
    {
-      return 0.0;//temp value
+      return 1.0/(1.0 + Math.exp(-arg));//sigmoid function
    }
 
    /*
@@ -20,6 +20,6 @@ public class Sigmoid implements ActivationFunction
     */
    public double derivative(double arg)
    {
-      return funct(arg) * (1-funct(arg)); // sigmoid derivative.
+      return this.funct(arg) * (1.0-this.funct(arg)); // sigmoid derivative.
    }
 } //public class Sigmoid implements ActivationFunction

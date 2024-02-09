@@ -58,7 +58,7 @@ public class AB1
 
 
 /*
- * Main function: runs/train the network based on configuration parameters.
+ * Main function: initializes and runs/train the network based on configuration parameters.
  */
    public static void main(String[] args)
    {
@@ -66,16 +66,15 @@ public class AB1
       allocate();
       populate();
       System.out.println(dumpNetConfig());
-      if (train)
+      if (train) //procedure if training
       {
          System.out.println(dumpTrainingConfigs());
          reportTraining(train());
          reportRun();
       }
-      else
+      else //procedure if running
       {
-         System.out.println("Weights: ");
-         System.out.println(dumpWeights());
+         preRun();
          reportRun();
       }
 
@@ -95,9 +94,9 @@ public class AB1
    public static int train()
    {
       boolean done = false;
-      int cases;
-      int curiteration = 0;
-      double curerror;
+      int cases;            //loop iterator for each case in training.
+      int curiteration = 0; //current iteration of the training.
+      double curerror;      //current error of the network.
       while(!done)
       {
          for (cases = 0; cases < numCases; cases++)
@@ -129,8 +128,6 @@ public class AB1
  */
    public static void allocate()
    {
-      f = new Sigmoid(); //defines the activation function object as a sigmoid.
-
       givenInputs = new double[numCases][numInputNodes];
       expectedOutputs = new double[numCases];
 
@@ -159,28 +156,32 @@ public class AB1
  */
    public static void populate()
    {
+      double[][] ttsetin = {{0.0, 0.0},
+              {0.0, 1.0},
+              {1.0, 0.0},
+              {1.0, 1.0}}; //temporary array to set truth table inputs.
+
+      double[] ttsetout = {0.0,
+              1.0,
+              1.0,
+              0.0}; //temporary array to set truth table outputs.
+
+
+      double[][] tempset1 = {{2.0, 1.0}, {2.0, 1.0}}; //temporary matrix used to set the n=1 weights manually
+      double[] tempset2 = {2.0, 1.0};                 //temporary array used to set n=2 weights manually.
+
       switch(populationMethod)
       {
          case 0:
             populateRand();
             break;
          case 1:
-            double[][] tempset1 = {{2.0, 1.0}, {2.0, 1.0}}; //temporary matrix used to set the n=1 weights manually
-            double[] tempset2 = {2.0, 1.0};                 //temporary array used to set n=2 weights manually.
             populateSet(tempset1, tempset2);
             break;
       } //switch(populationMethod)
 
 
-      double[][] ttsetin = {{0.0, 0.0},
-                            {0.0, 1.0},
-                            {1.0, 0.0},
-                            {1.0, 1.0}}; //temporary array to set truth table inputs.
 
-      double[] ttsetout = {0.0,
-                           1.0,
-                           1.0,
-                           0.0}; //temporary array to set truth table outputs.
 
 
       for (int cases = 0; cases < numCases; cases++)
@@ -200,18 +201,20 @@ public class AB1
  */
    public static void setConfig()
    {
-      maxCycles = 100000;
-      avgErrCut = 0.0002;
-      minRand = -1.5;
-      maxRand = 1.5;
-      lambda = 0.3;
+      maxCycles = 100000;   //Maximum amount of iterations when training.
+      avgErrCut = 0.0002;   //Error to stop at when training.
+      minRand = -1.5;       //Minimum value for random population of weights.
+      maxRand = 1.5;        //Maximum value for random population of weights.
+      lambda = 0.3;         //Lambada factor --> multiplier used to adjust step size in training, don't touch unless it really doesn't work.
       populationMethod = 0; //0 is random, 1 is set population.
-      train = true;
-      numInputNodes = 2;
-      numHiddenNodes = 20;
-      numOutNodes = 1;
-      numCases = 4; //reflects the number of cases put into the input and output of truth table
+      train = true;         //Training flag --> if set to true the network will train, if false the network will run.
+      numInputNodes = 2;    //For this network will most likely be 2 but can functionally be any integer.
+      numHiddenNodes = 20;  //For this network number of hidden nodes can be any value.
+      numOutNodes = 1;      //For this network this value will always be 1.
+      numCases = 4;         //Reflects the number of cases put into the input and output of truth table.
+      f = new Sigmoid();    //defines the activation function object as a sigmoid.
    } //public static void setConfig()
+
 
 
 /*
@@ -249,11 +252,11 @@ public class AB1
 
       System.out.println("Error Reached: " + calcError());
 
-      System.out.println();
+      System.out.println(); //newline for formatting purposes
       System.out.println("Final Weights: ");
       System.out.println(dumpWeights());
 
-      System.out.println();
+      System.out.println(); //newline for formatting purposes.
       System.out.println("Truth Table format: | In In | Out |");
       System.out.println(dumpTruthTable());
    } //public static void reportTraining(int iterations)
@@ -261,38 +264,46 @@ public class AB1
 
 
 /*
- * run the network and output the result.
+ * runs the network and output the result.
  */
    public static void reportRun()
    {
-      System.out.println("Truth Table format: | In In | Out |");
-      System.out.println(dumpTruthTable());
-      System.out.println();
+      System.out.println(); //new line for clarity
       System.out.println("Results from run");
-      for (int cases = 0; cases < numCases; cases++)
+      for (int cases = 0; cases < numCases; cases++) //run and print results
       {
          System.out.println("Case " + (cases+1) + ": " + getOutput(givenInputs[cases]));
          //System.out.println("DEBUG" + dumpVals());
       }
    } //public static void reportRun()
 
+/*
+ * prints information for running neural network (truth table, weights).
+ */
+   public static void preRun()
+   {
+      System.out.println("Weights: ");
+      System.out.println(dumpWeights());
+      System.out.println("Truth Table format: | In In | Out |");
+      System.out.println(dumpTruthTable());
+   }
 
 /******
  * cleaner sigmoid function wrappers (for convenience).
  */
 
 /*
- * Activation function of the network --> f(val)
+ * Wrapper for activation function of the network --> f(x)
  */
-   public static double act(double val)
+   public static double act(double x)
    {
-      return f.funct(val);
+      return f.funct(x);
    }
 
 
 
 /*
- * Calculates f'(x) for the given value.
+ * Wrapper for derivative of activation function --> f'(x)
  */
    public static double fprime(double x)
    {
@@ -310,7 +321,7 @@ public class AB1
  */
    public static void recalculate()
    {
-      for (int j = 0; j < numHiddenNodes; j++)//activation layer 2
+      for (int j = 0; j < numHiddenNodes; j++)
       {
          hj[j] = act(THETA(2, j)); //parameter of 2 refers to the hidden layer
       }
@@ -321,29 +332,29 @@ public class AB1
 
 
 /*
- * calculates the dot product in layer n for node a
+ * calculates the dot product (Theta) in layer n for node c of that layer.
  * n=2 refers to hidden layer.
  * n=3 refers to output activation layer.
  */
-   public static double THETA(int n, int a)
+   public static double THETA(int n, int c)
    {
       double sum = 0.0;
-      if (n == 2)
+      if (n == 2) //n=2 refers to the 2nd activation layer (hidden activation layer)
       {
          for (int k = 0; k < numInputNodes; k++)
          {
-            sum += ak[k]*w1kj[k][a];
+            sum += ak[k]*w1kj[k][c];
          }
       }
-      if (n == 3)
+      if (n == 3) //n=3 refers to the 3rd activation layer (output activation layer)
       {
          for (int j = 0; j < numHiddenNodes; j++)
          {
-            sum += hj[j] * w2j0[j];
+            sum += hj[j] * w2j0[j]; //since there is only one output activation there is no need to account for c.
          }
       }
       return sum;
-   } //public static double THETA(int n, int a)
+   } //public static double THETA(int n, int c)
 
 
 
@@ -365,7 +376,7 @@ public class AB1
  */
    public static void applyDeltas(double[][] deltaw1kj, double[] deltaw2j0)
    {
-      for (int k = 0; k < numInputNodes; k++)
+      for (int k = 0; k < numInputNodes; k++) //apply delta to the w1kj weights
       {
          for (int j = 0; j < numHiddenNodes; j++)
          {
@@ -373,7 +384,7 @@ public class AB1
          }
       }
 
-      for (int j = 0; j < numHiddenNodes; j++)
+      for (int j = 0; j < numHiddenNodes; j++) //apply delta to the w2j0 weights
       {
          w2j0[j] += deltaw2j0[j];
       }
@@ -397,7 +408,7 @@ public class AB1
  */
    public static void setNetwork(double[][] n1, double[] n2)
    {
-      for  (int k = 0; k < numInputNodes; k++) //populate first weights
+      for  (int k = 0; k < numInputNodes; k++) //populate w1kj weights
       {
          for  (int j = 0; j < numHiddenNodes; j++)
          {
@@ -405,7 +416,7 @@ public class AB1
          }
       }
 
-      for  (int j = 0; j < numHiddenNodes; j++)
+      for  (int j = 0; j < numHiddenNodes; j++) //populate w2j0 weights.
       {
          w2j0[j] = n2[j];
       }
@@ -421,17 +432,16 @@ public class AB1
  */
    public static void calcDeltas()
    {
-      omega0 = T0-F0;
-      psi0 = omega0 * fprime(THETA(3, 0)); // fprime calculates f'(theta0) (theta of the single output activation).
+      omega0 = T0-F0;                            //calculates omega0 and psi0 to avoid redundant calculations.
+      psi0 = omega0 * fprime(THETA(3, 0)); //THETA(3, 0) refers to the dot product for the single node in the output activation layer.
 
-
-      for (int j = 0; j < numHiddenNodes; j++)
+      for (int j = 0; j < numHiddenNodes; j++) //calculates the partial derivatives and deltas for the output layer.
       {
          partialwj0 = -hj[j] * psi0;
          deltawj0[j] = -lambda * partialwj0;
       }
 
-      for (int j = 0; j < numHiddenNodes; j++)
+      for (int j = 0; j < numHiddenNodes; j++) //calculates OMEGA(j) and PSI(j) to avoid redundant calculations.
       {
          OMEGA[j] = psi0 * w2j0[j];
          //System.out.println("DEBUG" + OMEGA[j]);
@@ -439,7 +449,7 @@ public class AB1
 
       }
 
-      for (int j = 0; j < numHiddenNodes; j++)
+      for (int j = 0; j < numHiddenNodes; j++) //calculates the partial derivatives and deltas for the output layer.
       {
          for (int k = 0; k < numInputNodes; k++)
          {
@@ -479,7 +489,7 @@ public class AB1
          input(givenInputs[cases]);
          recalculate();
          omega0 = expectedOutputs[cases]-F0;
-         ret += 0.5 * omega0*omega0;
+         ret += 0.5 * omega0 * omega0;
       }
       ret /= (double)numCases;
 

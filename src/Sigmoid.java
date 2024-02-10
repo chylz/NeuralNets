@@ -29,6 +29,6 @@ public class Sigmoid implements ActivationFunction
  */
    public String toString()
    {
-      return "Sigmoid";
+      return "sigmoid";
    }
 } //public class Sigmoid implements ActivationFunction

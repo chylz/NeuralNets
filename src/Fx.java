@@ -29,7 +29,7 @@ public class Fx implements ActivationFunction
  */
    public String toString()
    {
-      return "Linear";
+      return "linear";
    }
 } //public class Fx implements ActivationFunction
 

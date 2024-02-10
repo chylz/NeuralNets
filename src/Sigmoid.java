@@ -2,7 +2,8 @@
  * Author: Luke Zeng
  * Date of Creation: 1/30/2024
  *
- * Description: Sigmoid activation function which can be passed to a neural net.
+ * Description: Sigmoid implementation of the activation function f(x).
+ *              and its derivative.
  */
 
 public class Sigmoid implements ActivationFunction

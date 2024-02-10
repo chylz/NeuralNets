@@ -2,7 +2,8 @@
  * Author: Luke Zeng
  * Date of Creation: 1/30/2024
  *
- * Description: Linear activation function which can be passed to a neural net.
+ * Description: Linear (f(x) = x) implementation of the activation function f(x).
+ *              and its derivative.
  */
 
 public class Fx implements ActivationFunction

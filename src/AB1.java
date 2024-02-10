@@ -3,7 +3,8 @@
  * Date of Creation: 2/7/2024
  *
  * Description: Fully connected Feed-Forward A-B-1 Neural Network with Gradient Descent learning.
- *              Merged previous network files into one file representing the AB1 Network.
+ *              The way data is handled in this neural network is modeled after the way data is handled in
+ *              a spreadsheet (this project's network is based on the spreadsheet 2-2-1 network).
  */
 
 
@@ -24,47 +25,50 @@ public class AB1
 /******
  * Configuration Parameters
  */
-   public static double lambda;       //step size multiplier for gradient descent.
+   public static double lambda;        // step size multiplier for gradient descent.
    public static int numInputNodes;
    public static int numHiddenNodes;
-   public static int numOutNodes;      //number of output nodes.
-   public static int populationMethod; //Population method --> 0: randomize weights | 1: manually set weights.
-   public static boolean train;        //If true, train. If false, run.
-   public static double minRand;       //minimum random threshold
-   public static double maxRand;       //maximum random threshold.
-   public static double avgErrCut;     //average error cutoff (error threshold).
-   public static int maxIterations;        //maximum iterations before cutoff.
-   public static boolean hitThreshold; //Flag for program termination due to hitting error threshold.
+   public static int numOutNodes;      // number of output nodes.
+   public static int populationMethod; // population method --> 0: randomize weights | 1: manually set weights.
+   public static boolean train;        // if true, train. if false, run.
+   public static double minRand;       // minimum random threshold
+   public static double maxRand;       // maximum random threshold.
+   public static double avgErrCut;     // average error cutoff (error threshold).
+   public static int maxIterations;    // maximum iterations before cutoff.
+   public static boolean hitThreshold; // flag for program termination due to hitting error threshold.
+   public static boolean printWeight;  // flag to indicate whether to print weights before runnning.
+   public static boolean printTruths;  // flag to indicate whether to print the truth table.
+
 
 /******
  * Truth Table Arrays
  */
-   public static double[][] givenInputs;   //truth table inputs.
-   public static double[] expectedOutputs; //truth table outputs.
-   public static int numCases;             //number of rows (cases) in the truth table.
+   public static double[][] givenInputs;   // truth table inputs.
+   public static double[] expectedOutputs; // truth table outputs.
+   public static int numCases;             // number of rows (cases) in the truth table.
 
 /******
  * Training Arrays/Variables
  * Lowercase greek letter spellings (like psi, omega) represent the lowercase greek letters.
- * Lppercase greek letter spellings (like PSI, OMEGA) represent the uppercase greek letters.
+ * Uppercase greek letter spellings (like PSI, OMEGA) represent the uppercase greek letters.
  */
-   public static double[][] deltawkj; //delta w for  activation layer n = 1;
-   public static double[] deltawj0; //delta w for activation layer n = 2;
+   public static double[][] deltawkj; // delta w for activation layer n = 1;
+   public static double[] deltawj0;   // delta w for activation layer n = 2;
    public static double psi0;
    public static double omega0;
-   public static double T0; //expected output, only really there to make delta calculation function look more similar to the notes.
+   public static double T0; // expected output, only really there to make delta calculation function look more similar to the notes
    public static double partialwkj;
    public static double partialwj0;
    public static double[] PSI;
    public static double[] OMEGA;
-   public static int iterationsReached; //the amount of iterations reached during training.
+   public static int iterationsReached; // the amount of iterations reached during training.
 
 /******
  * constants for the THETA function (AKA magic numbers with documentation)
  * There is no definition for the input activation layer as you never take THETA for the inputs.
  */
-   public static final int hiddenLayer = 2; //indicates the THETA function to find THETA for a node in the hidden activation layer
-   public static final int outputLayer = 3; //indicates the THETA function to find THETA for a node in the output activation layer
+   public static final int hiddenLayer = 2; // indicates the THETA function to find THETA for a node in the hidden activation layer
+   public static final int outputLayer = 3; // indicates the THETA function to find THETA for a node in the output activation layer
 
 
 
@@ -77,23 +81,23 @@ public class AB1
       echoConfig();
       allocate();
       populate();
-      printNetworkConfig();
 
-      if (train) //procedure if training
+      if (train)          // procedure if training
       {
-         printTrainingParams(); //print training parameters
-         printStatus();         //prints a small status message letting user know that the program is training.
-         train();               //trains the network.
-         reportResults();       //reports the training results for the training
+         printStatus();   // prints a small status message letting user know that the program is training.
+         train();         // trains the network.
       }
-      else //procedure if running
+      else                // procedure if running
       {
-         printWeights();  //prints the edge weights of hte network, for convenience.
-         printStatus();   //prints a short status message which indicates that the program is running.
-         run();           //runs the network for all cases and stores the outputs.
-         reportResults(); //reports the results for running.
+         if (printWeight) // if option is selected, print weights.
+         {
+            printWeights();
+         }
+         printStatus();   // prints a short status message which indicates that the program is running.
+         run();           // runs the network for all cases and stores the outputs.
       }
-   }//public static void main(String[] args)
+      reportResults();    // print the result of the train/run.
+   } // public static void main(String[] args)
 
 
 
@@ -106,63 +110,65 @@ public class AB1
  */
    public static void setConfig()
    {
-      maxIterations = 100000; //Maximum amount of iterations when training.
-      avgErrCut = 0.0002;     //Error to stop at when training.
-      minRand = -1.5;         //Minimum value for random population of weights.
-      maxRand = 1.5;          //Maximum value for random population of weights.
-      lambda = 0.3;           //Lambada factor --> multiplier used to adjust step size in training, don't touch unless it really doesn't work.
-      populationMethod = 0;   //0 is random, 1 is populate from a set parameter.
-      train = true;           //Training flag --> if set to true the network will train, if false the network will run.
-      numInputNodes = 2;      //For this network will most likely be 2 but can functionally be any integer.
-      numHiddenNodes = 2;     //For this network number of hidden nodes can be any value.
-      numOutNodes = 1;        //For this network this value will always be 1.
-      numCases = 4;           //Reflects the number of cases put into the input and output of truth table.
-      f = new Sigmoid();      //Defines the activation function object as a sigmoid (which contains the sigmoid activation function).
-   } //public static void setConfig()
+      maxIterations = 100000; // Maximum amount of iterations when training.
+      avgErrCut = 0.0002;     // Error to stop at when training.
+      minRand = -1.5;         // Minimum value for random population of weights.
+      maxRand = 1.5;          // Maximum value for random population of weights.
+      lambda = 0.3;           // Lambada factor --> multiplier used to adjust step size in training
+      populationMethod = 0;   // 0 is random, 1 is populate from a set parameter.
+      train = true;           // Training flag --> if set to true the network will train, if false the network will run.
+      numInputNodes = 2;      // For this network will most likely be 2 but can functionally be any integer.
+      numHiddenNodes = 2;     // For this network number of hidden nodes can be any value.
+      numOutNodes = 1;        // For this network this value will always be 1.
+      numCases = 4;           // Reflects the number of cases put into the input and output of truth table.
+      printWeight = false;    // Flag that determines whether to print weights
+      printTruths = false;    // Flag that determines whether to print truth table at the end of running/training.
+      f = new Sigmoid();      // Defines the activation function as a sigmoid
+   } // public static void setConfig()
 
 
 
 /*
  * populates the arrays of the network based on the configuration parameters.
- * the user should change arrays declarations for "ttsetin" and "ttsetout" and "tempset1" and "tempset2" to change truth tables and
- * manually set weights when necessary. This method makes it simpler and more intuitive for the user to set truth table inputs and
- * manually set activation weights.
+ * the user should change arrays declarations for "ttsetin" & "ttsetout"; and "tempset1" & "tempset2" to change truth tables and
+ * manually set weights respectively. This method makes it simpler and more intuitive for the user to set truth table inputs and
+ * manually set activation weights. Make sure to change the population method to 1 (manually set weights) to set weights manually
  */
    public static void populate()
    {
       double[][] ttsetin = {{0.0, 0.0},
                             {0.0, 1.0},
                             {1.0, 0.0},
-                            {1.0, 1.0}}; //temporary array to set truth table inputs.
+                            {1.0, 1.0}}; // temporary array to set truth table inputs.
 
-      double[] ttsetout = {0.0,
-                           0.0,
-                           0.0,
-                           1.0}; //temporary array to set truth table outputs.`
+      double[] ttsetout  =  {0.0,
+                             0.0,
+                             0.0,
+                             1.0}; // temporary array to set truth table outputs. (indented to match input truth table)
 
       switch(populationMethod) // populates the weights of the network.
       {
-         case 0:
+         case 0:                                // random population
             populateRand();
             break;
-         case 1:
+         case 1:                                // manual population
             double[][] tempset1 = {{2.0, 1.0},
-                                   {2.0, 1.0}}; //temporary matrix used to set the n=1 weights manually
-            double[] tempset2 = {2.0, 1.0};     //temporary array used to set n=2 weights manually.
+                                   {2.0, 1.0}}; // temporary matrix used to set the layer n = 1 weights manually
+            double[] tempset2   =  {2.0, 1.0};  // temporary array used to set the layer n=2 weights manually.
             populateSet(tempset1, tempset2);
             break;
-      } //switch(populationMethod)
+      } // switch(populationMethod)
 
 
       for (int cases = 0; cases < numCases; cases++)
       {
          for (int k = 0; k < numInputNodes; k++)
          {
-            givenInputs[cases][k] = ttsetin[cases][k]; //set inputs in Truth Table.
+            givenInputs[cases][k] = ttsetin[cases][k]; // set inputs in Truth Table.
          }
-         expectedOutputs[cases] = ttsetout[cases]; //set the single value output in output Truth Table.
+         expectedOutputs[cases] = ttsetout[cases]; // set the single value output in output Truth Table.
       }
-   } //public static void populate()
+   } // public static void populate()
 
 
 
@@ -177,33 +183,33 @@ public class AB1
  */
    public static void train()
    {
-      boolean done = false; //flag to indicate that training has finished.
-      int cases;            //loop iterator for each case in training.
-      int curiteration = 0; //current iteration of the training.
-      double curerror;      //current error of the network.
+      boolean done = false; // flag to indicate that training has finished.
+      int cases;            // loop iterator for each case in training.
+      int curiteration = 0; // current iteration of the training.
+      double curerror;      // current error of the network.
       while(!done)
       {
          for (cases = 0; cases < numCases; cases++)
          {
-            trainProcedure(cases); //sets inputs, runs network, calculates delta W, and applies delta W for a given case.
+            trainProcedure(cases); // sets inputs, runs network, calculates delta W, and applies delta W for a given case.
          }
-         curerror = calcError(); //calculate the error to determine whether or not to end training early.
+         curerror = calcError();   // calculate the error to determine whether or not to end training early.
 
-         //System.out.println("DEBUG" + curerror);
+         // System.out.println("DEBUG" + curerror);
          if (curerror <= avgErrCut)
          {
-            hitThreshold = true; //mark that training terminated for hitting error threshold.
-            done = true;         //flag to indicate that training has finished.
+            hitThreshold = true; // mark that training terminated for hitting error threshold.
+            done = true;         // flag to indicate that training has finished.
          }
 
          if (++curiteration >= maxIterations)
          {
-            hitThreshold = false; //mark that training terminated not from hitting the error threshold (instead was exceeded max iterations)
-            done = true;          //flag to indicate that training has finished.
+            hitThreshold = false; // mark that training terminated not from hitting the error threshold
+            done = true;          // flag to indicate that training has finished.
          }
-      } //while(!done)
-      iterationsReached = curiteration; //stores the iterations reached for result reporting.
-   } //public static void train()
+      } // while(!done)
+      iterationsReached = curiteration; // stores the iterations reached for result reporting.
+   } // public static void train()
 
 
 
@@ -215,7 +221,7 @@ public class AB1
       givenInputs = new double[numCases][numInputNodes];
       expectedOutputs = new double[numCases];
 
-      if (train) //only allocate training-exclusive arrays if training.
+      if (train) // only allocate training-exclusive arrays if training.
       {
          PSI = new double[numHiddenNodes];
          OMEGA = new double[numHiddenNodes];
@@ -223,29 +229,29 @@ public class AB1
          deltawkj = new double[numInputNodes][numHiddenNodes];
          deltawj0 = new double[numHiddenNodes];
       }
-      else //only allocate run-exclusive arrays if running.
+      else // only allocate run-exclusive arrays if running.
       {
-         outputs = new double[numCases]; //stores the outputs after running.
+         outputs = new double[numCases]; // stores the outputs after running.
       }
 
-      w1kj = new double[numInputNodes][numHiddenNodes]; //connections between activation layers n=1 and n=2.
-      w2j0 = new double[numHiddenNodes];                //connections between activation layers n=2 and n=3.
+      w1kj = new double[numInputNodes][numHiddenNodes]; // connections between activation layers n=1 and n=2.
+      w2j0 = new double[numHiddenNodes];                // connections between activation layers n=2 and n=3.
 
-      ak = new double[numInputNodes];  //stores input activation layer values
-      hj = new double[numHiddenNodes]; //stores hidden activation layer values
-   } //public static void allocate()
+      ak = new double[numInputNodes];  // stores input activation layer values
+      hj = new double[numHiddenNodes]; // stores hidden activation layer values
+   } // public static void allocate()
 
 /*
  * runs the network and output the result.
  */
    public static void run()
    {
-      for (int cases = 0; cases < numCases; cases++) //runs all the test cases from the truth table.
+      for (int cases = 0; cases < numCases; cases++) // runs all the test cases from the truth table.
       {
-         outputs[cases] = getOutput(givenInputs[cases]); //gets and stores the output of the truth table inputs.
-         //System.out.println("DEBUG" + dumpVals());
+         outputs[cases] = getOutput(givenInputs[cases]); // gets and stores the output of the truth table inputs.
+         // System.out.println("DEBUG" + dumpVals());
       }
-   } //public static void run()
+   } // public static void run()
 
 
 /*
@@ -253,8 +259,28 @@ public class AB1
  */
    public static void echoConfig()
    {
-      System.out.println(dumpConfig());
-   }
+      printNetworkConfig(); // prints network configuration (A-B-1).
+      System.out.println(); // newline for clarity.
+
+      System.out.println("Configuration Parameters");
+      System.out.println("number of input nodes: " + numInputNodes);
+      System.out.println("number of hidden nodes: " + numHiddenNodes);
+      System.out.println("number of output nodes: " + numOutNodes);
+      System.out.println("population method: " + populationMethod);
+      System.out.println("activation function: " + f.toString()); // prints the activation function's type.
+
+      if (train) // training-exclusive parameters.
+      {
+         System.out.println();
+         System.out.println("Training Exclusive Parameters: ");
+         System.out.println("minRand: " + minRand);
+         System.out.println("maxRand: " + maxRand);
+         System.out.println("average error cutoff: " + avgErrCut);
+         System.out.println("maximum iterations: " + maxIterations);
+         System.out.println("lambda: " + lambda);
+      } // if (train)
+
+   } // public static void echoConfig()
 
 
 
@@ -266,44 +292,48 @@ public class AB1
  * If training, reports the results of training, including reason for termination, iterations reached, error reached,
  * final weights.
  * If running, reports the results of the run.
- * Always reports the truth table at the end for reference.
+ * If option is selected, print truth table.
  */
    public static void reportResults()
    {
-      if(train)
+      if (train)
       {
          System.out.println("Training Terminated");
          System.out.print("Reason for termination: ");
-         if (hitThreshold) //if the training termination happened because the error went below the error threshold, report it.
+         if (hitThreshold) // if the training termination happened because the error went below the error threshold, report it.
          {
             System.out.print("Error Threshold Reached\n");
          }
-         else //otherwise, report that the maximum amount of iterations has been reached.
+         else // otherwise, report that the maximum amount of iterations has been reached.
          {
             System.out.print("Max Iterations Reached\n");
          }
 
-         System.out.println("Iterations Reached: " + iterationsReached); //output the number of iterations training took.
+         System.out.println("Iterations Reached: " + iterationsReached); // output the number of iterations training took.
 
-         System.out.println("Error Reached: " + calcError()); //output the error reached at the end of training.
+         System.out.println("Error Reached: " + calcError());            // output the error reached at the end of training.
 
-         System.out.println(); //newline for formatting purposes
+         System.out.println();                                           // newline for formatting purposes
 
          System.out.println("Final Weights: ");
-         System.out.println(dumpWeights());
-      } //if(train)
+         System.out.println(dumpWeights());                              // print out weights in a nice format.
+      } // if (train)
       else
       {
-         System.out.println("Results from Training:");
+         System.out.println("Results from Running:");
          for(int cases = 0; cases < numCases; cases++)
          {
             System.out.println("Case " + (cases+1) + ": " + outputs[cases]);
          }
       }
-      System.out.println();
-      System.out.println("Truth Table (format: | In ... In | Out |)");
-      System.out.println(dumpTruthTable());
-   } //public static void reportTraining(int iterations)
+
+      if (printTruths)
+      {
+         System.out.println();
+         System.out.println("Truth Table (format: | In ... In | Out |)");
+         System.out.println(dumpTruthTable());
+      }
+   } // public static void reportResults()
 
 /*
  * prints the configuration (A-B-1) of the network.
@@ -319,39 +349,30 @@ public class AB1
    public static void printWeights()
    {
       System.out.println("Weights: ");
-      System.out.println(dumpWeights()); //prints a pretty-printing representation of the weights.
+      System.out.println(dumpWeights()); // prints a pretty-printing representation of the weights.
    }
    
 /*
  * prints a small status message that indicates to the user that the program is running or training
- * (as opposed to freezing)
+ * (as opposed to the program freezing)
  */
    public static void printStatus()
    {
-      System.out.println(); //whitespace for clarity
-      if(train) //if training print a training status message.
+      System.out.println(); // whitespace for clarity
+      if (train) // if training print a training status message.
       {
          System.out.println("Training ...");
       }
-      else //if running print a running status message.
+      else // if running print a running status message.
       {
          System.out.println("Running ...");
       }
-      System.out.println(); //whitespace for clarity
-   }
-
-/*
- * prints the training parameters (lambda, maximum amount of iterations, error threshold, and random number range).
- */
-   public static void printTrainingParams()
-   {
-      System.out.println("Training Parameters: \n| lambda:" + lambda + " | max iterations:" + maxIterations + " | error threshold:"
-              + avgErrCut + " | random number range: [" + minRand + " , " + maxRand + "] |");
-   }
+      System.out.println(); // whitespace for clarity
+   } // public static void printStatus()
 
 
 /******
- * cleaner sigmoid function wrappers (I am doing this for convenience and clarity).
+ * Sigmoid function wrappers (I am doing this for convenience and clarity).
  */
 
 /*
@@ -367,7 +388,7 @@ public class AB1
  */
    public static double fprime(double x)
    {
-      return f.derivative(x); //(f(x)*(1-f(x)) --> f prime with a sigmoid function.
+      return f.derivative(x); // (f(x)*(1-f(x)) --> f prime with a sigmoid function.
    }
 
 
@@ -381,13 +402,13 @@ public class AB1
  */
    public static void recalculate()
    {
-      for (int j = 0; j < numHiddenNodes; j++) //updates each node in the hidden layer.
+      for (int j = 0; j < numHiddenNodes; j++) // updates each node in the hidden layer.
       {
-         hj[j] = act(THETA(2, j)); //parameter of 2 refers to the hidden layer, parameter j refers to node j in the hidden layer.
+         hj[j] = act(THETA(2, j)); // parameter of 2 refers to the hidden layer, parameter j refers to node j in the hidden layer.
       }
 
-      F0 = act(THETA(3, 0)); //parameter of 3 refers to the output activation layer and parameter 0 refers to node F0.
-   } //public static void recalculate()
+      F0 = act(THETA(3, 0)); // parameter of 3 refers to the output activation layer and parameter 0 refers to node F0.
+   } // public static void recalculate()
 
 
 
@@ -397,22 +418,22 @@ public class AB1
    public static double THETA(int n, int c)
    {
       double sum = 0.0;
-      if (n == hiddenLayer) //calculate THETA for a node in the hidden activation layer.
+      if (n == hiddenLayer) // calculate THETA for a node in the hidden activation layer.
       {
-         for (int k = 0; k < numInputNodes; k++) //calculates the dot product of the input activations and the edges leading to node c.
+         for (int k = 0; k < numInputNodes; k++) // calculates the dot product of the input activations and the edges leading to node c.
          {
             sum += ak[k] * w1kj[k][c];
          }
       }
-      if (n == outputLayer) //calculate THETA for a node in the output layer.
+      if (n == outputLayer) // calculate THETA for a node in the output layer.
       {
          for (int j = 0; j < numHiddenNodes; j++)
          {
-            sum += hj[j] * w2j0[j]; //not accounting for c because the output activation layer of an A-B-1 network has only 1 output
+            sum += hj[j] * w2j0[j]; // not accounting for c because the output activation layer of an A-B-1 network has only 1 output
          }
       }
       return sum;
-   } //public static double THETA(int n, int c)
+   } // public static double THETA(int n, int c)
 
 
 
@@ -421,11 +442,11 @@ public class AB1
  */
    public static void input(double[] a)
    {
-      for (int k = 0; k < numInputNodes; k++) //set input activation layer to the given inputs.
+      for (int k = 0; k < numInputNodes; k++) // set input activation layer to the given inputs.
       {
          ak[k] = a[k];
       }
-   } //public static void input(double[] a)
+   } // public static void input(double[] a)
 
 
 
@@ -434,7 +455,7 @@ public class AB1
  */
    public static void applyDeltas()
    {
-      for (int k = 0; k < numInputNodes; k++) //apply deltas to the w1kj weights
+      for (int k = 0; k < numInputNodes; k++) // apply deltas to the w1kj weights
       {
          for (int j = 0; j < numHiddenNodes; j++)
          {
@@ -442,22 +463,22 @@ public class AB1
          }
       }
 
-      for (int j = 0; j < numHiddenNodes; j++) //apply delta to the w2j0 weights
+      for (int j = 0; j < numHiddenNodes; j++) // apply delta to the w2j0 weights
       {
          w2j0[j] += deltawj0[j];
       }
-   } //public static void applyDeltas(double[][] deltaw1kj, double[] deltaw2j0)
+   } // public static void applyDeltas()
 
 
 
 /*
- * updates the input and calculates the output to a given input and returns the output. 
+ * runs the network on a given set of input activations and returns the output.
  */
    public static double getOutput(double[] inp)
    {
-      input(inp);    //inputs the given set of values.
-      recalculate(); //runs the network.
-      return F0;     //returns the output resulting from the run.
+      input(inp);    // inputs the given set of values.
+      recalculate(); // runs the network.
+      return F0;     // returns the output resulting from the run.
    }
 
 
@@ -472,23 +493,27 @@ public class AB1
  */
    public static void calcDeltas()
    {
-      omega0 = T0 - F0;                          //calculates omega0 and psi0 to avoid redundant calculations.
-      psi0 = omega0 * fprime(THETA(3, 0)); //THETA(3, 0) refers to the dot product for the single node in the output activation layer.
+      omega0 = T0 - F0;                          // calculates omega0 and psi0 to avoid redundant calculations.
+      psi0 = omega0 * fprime(THETA(outputLayer, 0)); // THETA(outputLayer, 0) refers to the dot product for the output activation.
 
-      for (int j = 0; j < numHiddenNodes; j++) //calculates the partial derivatives and deltas for the output layer.
+      for (int j = 0; j < numHiddenNodes; j++) // calculates the partial derivatives and deltas for the output layer.
       {
          partialwj0 = -hj[j] * psi0;
          deltawj0[j] = -lambda * partialwj0;
       }
 
-      for (int j = 0; j < numHiddenNodes; j++) //calculates OMEGA(j) and PSI(j) to avoid redundant calculations.
+      for (int j = 0; j < numHiddenNodes; j++) // calculates OMEGA(j) and PSI(j) to avoid redundant calculations.
       {
          OMEGA[j] = psi0 * w2j0[j];
-         //System.out.println("DEBUG" + OMEGA[j]);
-         PSI[j] = OMEGA[j] * fprime(THETA(2, j));
-      }
+         // System.out.println("DEBUG" + OMEGA[j]);
 
-      for (int j = 0; j < numHiddenNodes; j++) //calculates the partial derivatives and deltas for the output layer.
+/*
+ * THETA(hiddenLayer, j) refers to THETA sub j, the dot product for node j in the hidden activations.
+ */
+         PSI[j] = OMEGA[j] * fprime(THETA(hiddenLayer, j));
+      } // for (int j = 0; j < numHiddenNodes; j++)
+
+      for (int j = 0; j < numHiddenNodes; j++) // calculates the partial derivatives and deltas for the output layer.
       {
          for (int k = 0; k < numInputNodes; k++)
          {
@@ -497,7 +522,7 @@ public class AB1
          }
       }
 
-   } //public static void calcDeltas()
+   } // public static void calcDeltas()
 
 
 
@@ -515,13 +540,13 @@ public class AB1
    {
       input(givenInputs[truthtableindex]);
       T0 = expectedOutputs[truthtableindex];
-      recalculate(); //runs the network.
+      recalculate(); // runs the network.
 
       calcDeltas();
 
       applyDeltas();
       recalculate();
-   } //public static void trainProcedure(int truthtableindex)
+   } // public static void trainProcedure(int truthtableindex)
 
 
 
@@ -531,17 +556,17 @@ public class AB1
    public static double calcError()
    {
       double ret = 0.0;
-      for (int cases = 0; cases < numCases; cases++) //run network for all the cases and calculate the error for each one
+      for (int cases = 0; cases < numCases; cases++) // run network for all the cases and calculate the error for each one
       {
-         input(givenInputs[cases]);            //input the truth table inputs for the current index.
-         recalculate();                        //run the network
-         omega0 = expectedOutputs[cases] - F0; //calculate difference between expected output for this case and actual output.
-         ret += 0.5 * omega0 * omega0;         //add error for this case to total error.
+         input(givenInputs[cases]);            // input the truth table inputs for the current index.
+         recalculate();                        // run the network
+         omega0 = expectedOutputs[cases] - F0; // calculate difference between expected output for this case and actual output.
+         ret += 0.5 * omega0 * omega0;         // add error for this case to total error.
       }
-      ret /= (double) numCases; //divide by number of cases to take the average error over all test cases.
+      ret /= (double) numCases; // divide by number of cases to take the average error over all test cases.
 
       return ret;
-   } //public static double calcError()
+   } // public static double calcError()
 
 
 
@@ -554,21 +579,21 @@ public class AB1
  */
    public static void populateRand()
    {
-      double range = maxRand-minRand; //range size of the random number to help calculate range.
-      double offset = minRand;        //offset of the random number to help calculate range.
-      for (int k = 0; k < numInputNodes; k++) //populate w1kj weights.
+      double range = maxRand-minRand;         // range size of the random number to help calculate range.
+      double offset = minRand;                // offset of the random number to help calculate range.
+      for (int k = 0; k < numInputNodes; k++) // populate w1kj weights.
       {
          for (int j = 0; j < numHiddenNodes; j++)
          {
-            w1kj[k][j] = Math.random() * range + offset; //random number between minRand and maxRand.
+            w1kj[k][j] = Math.random() * range + offset; // random number between minRand and maxRand.
          }
       }
 
-      for (int j= 0; j < numHiddenNodes; j++) //populate w2j0 weights.
+      for (int j= 0; j < numHiddenNodes; j++) // populate w2j0 weights.
       {
-         w2j0[j] = Math.random() * range + offset; //random number between minRand and maxRand.
+         w2j0[j] = Math.random() * range + offset; // random number between minRand and maxRand.
       }
-   } //public static void populateRand()
+   } // public static void populateRand()
 
 
 
@@ -577,36 +602,23 @@ public class AB1
  */
    public static void populateSet(double[][] neww1kj, double[] neww2j0)
    {
-      for  (int k = 0; k < numInputNodes; k++) //populate w1kj weights.
+      for (int k = 0; k < numInputNodes; k++) // populate w1kj weights.
       {
-         for  (int j = 0; j < numHiddenNodes; j++)
+         for (int j = 0; j < numHiddenNodes; j++)
          {
             w1kj[k][j] = neww1kj[k][j];
          }
       }
 
-      for  (int j = 0; j < numHiddenNodes; j++) //populate w2j0 weights.
+      for (int j = 0; j < numHiddenNodes; j++) // populate w2j0 weights.
       {
          w2j0[j] = neww2j0[j];
       }
-   } //public static void populateSet(double[][] n1, double[] n2)
+   } // public static void populateSet(double[][] neww1kj, double[] neww2j0)
 
 /******
  * Pretty printing string functions
  */
-
-/*
- * returns a pretty-printing formatted version of the configuration parameters.
- */
-   public static String dumpConfig()
-   {
-      return "| lambda:" + lambda + " | number of input nodes:" + numInputNodes + " | number of hidden nodes:" + numHiddenNodes +
-             " | number of output nodes:" + numOutNodes + " | population method:" + populationMethod + " | \n| minRand:" + minRand +
-             " | maxRand:" + maxRand + " | average error cutoff:" + avgErrCut + " | maximum iterations:" + maxIterations + " | " +
-             "Activation function: " + f.toString() + " |";
-   }
-
-
 
 /*
  * returns a pretty-printing string of the truth table. 
@@ -620,13 +632,13 @@ public class AB1
          ret += "| ";
          for (int input = 0; input < numInputNodes; input++)
          {
-            ret += givenInputs[cases][input] + " ";
+            ret += givenInputs[cases][input] + " ";                                // adds input to return string.
          }
-         ret += "| " + expectedOutputs[cases] + " | --> Case " + (cases+1) + "\n";
+         ret += "| " + expectedOutputs[cases] + " | --> Case " + (cases+1) + "\n"; // adds output and case number label.
       }
       
       return ret;
-   } //public static String dumpTruthTable()
+   } // public static String dumpTruthTable()
 
 
 
@@ -636,11 +648,12 @@ public class AB1
    public static String dumpWeights()
    {
       String ret = "";
-      ret += "----------------------------------------------------------------------"; //divider characters for aesthetic
+      ret += "----------------------------------------------------------------------"; // divider characters for aesthetic
       ret += "\n";
-      for (int k = 0; k < numInputNodes; k++) //formats w1kj weights in an easily digestible format.
+
+      for (int k = 0; k < numInputNodes; k++) // formats w1kj weights in an easily digestible format.
       {
-         ret += "| "; //beginning separator character.
+         ret += "| ";
          for (int j = 0; j < numHiddenNodes; j++)
          {
             ret += "w1" + k + j + ": " +  w1kj[k][j] + " | ";
@@ -648,25 +661,25 @@ public class AB1
          ret += "\n";
       }
 
-      ret += "----------------------------------------------------------------------"; //divider characters for aesthetic
+      ret += "----------------------------------------------------------------------"; // divider characters for aesthetic
       ret += "\n";
 
-      for (int j = 0; j < numHiddenNodes; j++) //formats w2j0 weights into an easily digestible format.
+      for (int j = 0; j < numHiddenNodes; j++) // formats w2j0 weights into an easily digestible format.
       {
          ret += "w2" + j + "" + 0 + ": " + w2j0[j] + " | ";
       }
 
       ret += "\n";
-      ret += "----------------------------------------------------------------------"; //divider characters for aesthetic
+      ret += "----------------------------------------------------------------------"; // divider characters for aesthetic
 
       return ret;
-   } //public static String dumpWeights()
+   } // public static String dumpWeights()
 
 
 
-   /*
-    * returns all the activation values as a string. Used for DEBUG.
-    */
+/*
+ * returns all the activation values as a string. Used for DEBUG.
+ */
    public static String dumpVals()
    {
       String ret = "";
@@ -685,6 +698,6 @@ public class AB1
       ret += F0 + " ";
 
       return ret;
-   } //public static String dumpVals()
+   } // public static String dumpVals()
 
-} //public class AB1
+} // public class AB1

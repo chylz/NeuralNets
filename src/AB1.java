@@ -2,7 +2,7 @@
  * Author: Luke Zeng
  * Date of Creation: 2/7/2024
  *
- * Description: Feed-Forward A-B-1 Neural Network with Gradient Descent learning.
+ * Description: Fully connected Feed-Forward A-B-1 Neural Network with Gradient Descent learning.
  *              Merged previous network files into one file representing the AB1 Network.
  */
 
@@ -10,17 +10,18 @@
 public class AB1
 {
 
-/*
- * base network storage and activation functions.
+/******
+ * Base network storage and activation function.
  */
-   public static double[][] w1kj; // edge weights between layers a and h.
-   public static double[] w2j0; // edge weights between layers h and F0
-   public static double F0; //stores the single output activation.
-   public static double[] ak; //stores the input activations
-   public static double[] hj; //stores the single hidden activation node values.
+   public static double[][] w1kj;      // edge weights between layers a and h.
+   public static double[] w2j0;        // edge weights between layers h and F0
+   public static double F0;            //stores the single output activation.
+   public static double[] ak;          //stores the input activations
+   public static double[] hj;          //stores the single hidden activation node values.
    public static ActivationFunction f; // activation function f(x)
+   public static double[] outputs;
 
-/*
+/******
  * Configuration Parameters
  */
    public static double lambda;
@@ -42,8 +43,8 @@ public class AB1
    public static double[] expectedOutputs;
    public static int numCases;
 
-/*
- * Training Memory
+/*****
+ * Training Arrays/Variables
  */
    public static double[][] deltawkj; //delta w for  activation layer n = 1;
    public static double[] deltawj0; //delta w for activation layer n = 2;
@@ -54,31 +55,35 @@ public class AB1
    public static double[] PSI;
    public static double[] OMEGA;
    public static double omega0;
+   public static int iterationsReached; //the amount of iterations reached during training.
 
 
 
 /*
- * Main function: initializes and runs/train the network based on configuration parameters.
+ * main function: initializes and runs/train the network based on configuration parameters.
  */
    public static void main(String[] args)
    {
       setConfig();
+      echoConfig();
       allocate();
       populate();
-      System.out.println(dumpNetConfig());
+      printNetworkConfig();
+
       if (train) //procedure if training
       {
          System.out.println(dumpTrainingConfigs());
-         reportTraining(train());
-         reportRun();
+         printStatus();
+         train();
+         reportResults(); //reports the training results for the training (runs train as well)
       }
       else //procedure if running
       {
-         preRun();
-         reportRun();
+         printWeights(); //prints the edge weights of hte network, for convenience.
+         printStatus();  //prints a short status message which indicates that the program is running.
+         run();          //runs the network for all cases and stores the outputs.
+         reportResults();
       }
-
-
    }//public static void main(String[] args)
 
 
@@ -88,10 +93,74 @@ public class AB1
  */
 
 /*
- * train the network with gradient descent learning, then print out the weights obtained by training.
- * Returns the number of iterations the training took.
+ * sets the configuration parameters of the network. (User can and should change this for their needs)
  */
-   public static int train()
+   public static void setConfig()
+   {
+      maxCycles = 100000;   //Maximum amount of iterations when training.
+      avgErrCut = 0.0002;   //Error to stop at when training.
+      minRand = -1.5;       //Minimum value for random population of weights.
+      maxRand = 1.5;        //Maximum value for random population of weights.
+      lambda = 0.3;         //Lambada factor --> multiplier used to adjust step size in training, don't touch unless it really doesn't work.
+      populationMethod = 0; //0 is random, 1 is populate from a set parameter.
+      train = true;         //Training flag --> if set to true the network will train, if false the network will run.
+      numInputNodes = 2;    //For this network will most likely be 2 but can functionally be any integer.
+      numHiddenNodes = 2;   //For this network number of hidden nodes can be any value.
+      numOutNodes = 1;      //For this network this value will always be 1.
+      numCases = 4;         //Reflects the number of cases put into the input and output of truth table.
+      f = new Sigmoid();    //Defines the activation function object as a sigmoid (which contains the sigmoid activation function).
+   } //public static void setConfig()
+
+
+
+/*
+ * populates the arrays of the network based on the configuration parameters.
+ * (user should change arrays "ttsetin" and "ttsetout" and "tempset1" and "tempset2" to change truth tables and
+ * manually set weights when necessary)
+ */
+   public static void populate()
+   {
+      double[][] ttsetin = {{0.0, 0.0},
+                            {0.0, 1.0},
+                            {1.0, 0.0},
+                            {1.0, 1.0}}; //temporary array to set truth table inputs.
+
+      double[] ttsetout = {0.0,
+                           0.0,
+                           0.0,
+                           1.0}; //temporary array to set truth table outputs.`
+
+      switch(populationMethod) // populates the weights of the network.
+      {
+         case 0:
+            populateRand();
+            break;
+         case 1:
+            double[][] tempset1 = {{2.0, 1.0},
+                                   {2.0, 1.0}}; //temporary matrix used to set the n=1 weights manually
+            double[] tempset2 = {2.0, 1.0};     //temporary array used to set n=2 weights manually.
+            populateSet(tempset1, tempset2);
+            break;
+      } //switch(populationMethod)
+
+
+      for (int cases = 0; cases < numCases; cases++)
+      {
+         for (int k = 0; k < numInputNodes; k++)
+         {
+            givenInputs[cases][k] = ttsetin[cases][k]; //set inputs in Truth Table.
+         }
+         expectedOutputs[cases] = ttsetout[cases]; //set single value in output Truth Table.
+      }
+   } //public static void populate()
+
+
+
+/*
+ * train the network with gradient descent learning, then print out the weights obtained by training.
+ * stores the amount of iterations the network took to train in a static field.
+ */
+   public static void train()
    {
       boolean done = false;
       int cases;            //loop iterator for each case in training.
@@ -118,19 +187,18 @@ public class AB1
             done = true;
          }
       } //while(!done)
-      return curiteration;
+      iterationsReached = curiteration;
    } //public static int train()
 
 
 
 /*
- * allocates the arrays and activation function for the network.
+ * allocates the major network arrays for the network.
  */
    public static void allocate()
    {
       givenInputs = new double[numCases][numInputNodes];
       expectedOutputs = new double[numCases];
-
 
       if (train)
       {
@@ -141,80 +209,26 @@ public class AB1
          deltawj0 = new double[numHiddenNodes];
       }
 
-
       w1kj = new double[numInputNodes][numHiddenNodes];
       w2j0 = new double[numHiddenNodes];
 
       ak = new double[numInputNodes];
       hj = new double[numHiddenNodes];
+
+      outputs = new double[numCases];
    } //public static void allocate()
 
-
-
 /*
- * populates the arrays of the network based on the configuration parameters.
+ * runs the network and output the result.
  */
-   public static void populate()
+   public static void run()
    {
-      double[][] ttsetin = {{0.0, 0.0},
-              {0.0, 1.0},
-              {1.0, 0.0},
-              {1.0, 1.0}}; //temporary array to set truth table inputs.
-
-      double[] ttsetout = {0.0,
-              1.0,
-              1.0,
-              0.0}; //temporary array to set truth table outputs.
-
-
-      double[][] tempset1 = {{2.0, 1.0}, {2.0, 1.0}}; //temporary matrix used to set the n=1 weights manually
-      double[] tempset2 = {2.0, 1.0};                 //temporary array used to set n=2 weights manually.
-
-      switch(populationMethod)
+      for (int cases = 0; cases < numCases; cases++) //run and print results
       {
-         case 0:
-            populateRand();
-            break;
-         case 1:
-            populateSet(tempset1, tempset2);
-            break;
-      } //switch(populationMethod)
-
-
-
-
-
-      for (int cases = 0; cases < numCases; cases++)
-      {
-         for (int k = 0; k < numInputNodes; k++)
-         {
-            givenInputs[cases][k] = ttsetin[cases][k];
-         }
-         expectedOutputs[cases] = ttsetout[cases];
+         outputs[cases] = getOutput(givenInputs[cases]); //gets and stores the output of the inputs.
+         //System.out.println("DEBUG" + dumpVals());
       }
-   } //public static void populate()
-
-
-
-/*
- * sets the configuration parameters of the network.
- */
-   public static void setConfig()
-   {
-      maxCycles = 100000;   //Maximum amount of iterations when training.
-      avgErrCut = 0.0002;   //Error to stop at when training.
-      minRand = -1.5;       //Minimum value for random population of weights.
-      maxRand = 1.5;        //Maximum value for random population of weights.
-      lambda = 0.3;         //Lambada factor --> multiplier used to adjust step size in training, don't touch unless it really doesn't work.
-      populationMethod = 0; //0 is random, 1 is set population.
-      train = true;         //Training flag --> if set to true the network will train, if false the network will run.
-      numInputNodes = 2;    //For this network will most likely be 2 but can functionally be any integer.
-      numHiddenNodes = 20;  //For this network number of hidden nodes can be any value.
-      numOutNodes = 1;      //For this network this value will always be 1.
-      numCases = 4;         //Reflects the number of cases put into the input and output of truth table.
-      f = new Sigmoid();    //defines the activation function object as a sigmoid.
-   } //public static void setConfig()
-
+   } //public static void reportRun()
 
 
 /*
@@ -228,72 +242,81 @@ public class AB1
 
 
 /******
- * Result reporting methods
+ * Methods for printing information to the console. 
  */
 
 /*
- * reports the end results for training.
+ * If training, reports the results of training, including reason for termination, iterations reached, error reached,
+ * final weights.
+ * If running, reports the results of the run.
+ * Always reports the truth table at the end for reference.
  */
-   public static void reportTraining(int iterations)
+   public static void reportResults()
    {
-      System.out.println();
-      System.out.println("Training Terminated");
-      System.out.print("Reason for termination: ");
-      if (hitThreshold)
+      if(train)
       {
-         System.out.print("Error Threshold Reached\n");
-      }
+         System.out.println("Training Terminated");
+         System.out.print("Reason for termination: ");
+         if (hitThreshold) //if the training termination happened because the error went below the error threshold, report it.
+         {
+            System.out.print("Error Threshold Reached\n");
+         }
+         else //otherwise, report that the maximum amount of iterations has been reached.
+         {
+            System.out.print("Max Iterations Reached\n");
+         }
+
+         System.out.println("Iterations Reached: " + iterationsReached); //output the number of iterations training took.
+
+         System.out.println("Error Reached: " + calcError()); //output the error reached at the end of training.
+
+         System.out.println(); //newline for formatting purposes
+
+         System.out.println("Final Weights: ");
+         System.out.println(dumpWeights());
+      } //if(train)
       else
       {
-         System.out.print("Max Iterations Reached\n");
+         System.out.println("Results from Training:");
+         for(int cases = 0; cases < numCases; cases++)
+         {
+            System.out.println("Case " + (cases+1) + ": " + outputs[cases]);
+         }
       }
-
-      System.out.println("Iterations Reached: " + iterations);
-
-      System.out.println("Error Reached: " + calcError());
-
-      System.out.println(); //newline for formatting purposes
-      System.out.println("Final Weights: ");
-      System.out.println(dumpWeights());
-
-      System.out.println(); //newline for formatting purposes.
-      System.out.println("Truth Table format: | In In | Out |");
+      System.out.println();
+      System.out.println("Truth Table format: | In ... In | Out |");
       System.out.println(dumpTruthTable());
    } //public static void reportTraining(int iterations)
 
-
-
 /*
- * runs the network and output the result.
+ * prints the configuration (A-B-1) of the network.
  */
-   public static void reportRun()
+   public static String printNetworkConfig()
    {
-      System.out.println(); //new line for clarity
-      System.out.println("Results from run");
-      for (int cases = 0; cases < numCases; cases++) //run and print results
-      {
-         System.out.println("Case " + (cases+1) + ": " + getOutput(givenInputs[cases]));
-         //System.out.println("DEBUG" + dumpVals());
-      }
-   } //public static void reportRun()
+      return "Network Configuration: " + numInputNodes + "-" + numHiddenNodes + "-" + numOutNodes;
+   }
 
 /*
- * prints information for running neural network (truth table, weights).
+ * prints the weights of the network to the console. 
  */
-   public static void preRun()
+   public static void printWeights()
    {
       System.out.println("Weights: ");
       System.out.println(dumpWeights());
-      System.out.println("Truth Table format: | In In | Out |");
-      System.out.println(dumpTruthTable());
    }
+   
+/*
+ * prints the 
+ */
+
+
 
 /******
  * cleaner sigmoid function wrappers (for convenience).
  */
 
 /*
- * Wrapper for activation function of the network --> f(x)
+ * wrapper for activation function --> f(x)
  */
    public static double act(double x)
    {
@@ -303,7 +326,7 @@ public class AB1
 
 
 /*
- * Wrapper for derivative of activation function --> f'(x)
+ * wrapper for derivative of activation function --> f'(x)
  */
    public static double fprime(double x)
    {
@@ -317,16 +340,16 @@ public class AB1
  */
 
 /*
- * recalculates the entire network
+ * runs the network and stores the resulting activation weights and output.
  */
    public static void recalculate()
    {
       for (int j = 0; j < numHiddenNodes; j++)
       {
-         hj[j] = act(THETA(2, j)); //parameter of 2 refers to the hidden layer
+         hj[j] = act(THETA(2, j)); //parameter of 2 refers to the hidden layer, parameter j refers to node j in the hidden layer.
       }
 
-      F0 = act(THETA(3, 0)); //parameter of 3 refers to the output activation layer and parameter 0 refers to node F0
+      F0 = act(THETA(3, 0)); //parameter of 3 refers to the output activation layer and parameter 0 refers to node F0.
    } //public static void recalculate()
 
 
@@ -359,7 +382,7 @@ public class AB1
 
 
 /*
- * takes in  an input activation layer and sets the current input to the given input.
+ * takes in an input activation layer and sets the current input to the given input.
  */
    public static void input(double[] a)
    {
@@ -389,6 +412,7 @@ public class AB1
          w2j0[j] += deltaw2j0[j];
       }
    } //public static void applyDeltas(double[][] deltaw1kj, double[] deltaw2j0)
+
 
 
 /*
@@ -423,12 +447,13 @@ public class AB1
    } //public static void setNetwork(double[][] n1, double[] n2)
 
 
+
 /******
  * Training Helper functions
  */
 
 /*
- * Calculates the delta w values for the network and stores them in arrays.
+ * calculates the delta w values for the network and stores them in arrays.
  */
    public static void calcDeltas()
    {
@@ -446,7 +471,6 @@ public class AB1
          OMEGA[j] = psi0 * w2j0[j];
          //System.out.println("DEBUG" + OMEGA[j]);
          PSI[j] = OMEGA[j] * fprime(THETA(2, j));
-
       }
 
       for (int j = 0; j < numHiddenNodes; j++) //calculates the partial derivatives and deltas for the output layer.
@@ -459,6 +483,7 @@ public class AB1
       }
 
    } //public static void calcDeltas()
+
 
 
 /*
@@ -491,7 +516,7 @@ public class AB1
          omega0 = expectedOutputs[cases]-F0;
          ret += 0.5 * omega0 * omega0;
       }
-      ret /= (double)numCases;
+      ret /= (double) numCases;
 
       return ret;
    } //public static double calcError()
@@ -533,6 +558,8 @@ public class AB1
       setNetwork(neww1kj, neww2j0);
    }
 
+
+
 /******
  * Pretty printing functions
  */
@@ -542,19 +569,9 @@ public class AB1
  */
    public static String dumpConfig()
    {
-      return "lambda:" + lambda + " | numInputNodes:" + numInputNodes + " | numOutNodes:" + numOutNodes +
-             " | numHiddenNodes:" + numHiddenNodes + " | populationMethod:" + populationMethod + " | minRand:" + minRand +
-             " | maxRand:" + maxRand + " | avgErrCut:" + avgErrCut + " | maxIterations:" + maxCycles + " |";
-   }
-
-
-
-/*
- * returns a pretty-printing string of the network configuration.
- */
-   public static String dumpNetConfig()
-   {
-      return "Network Configuration: " + numInputNodes + "-" + numHiddenNodes + "-" + numOutNodes;
+      return "lambda:" + lambda + " | number of input nodes:" + numInputNodes + " | number of hidden nodes:" + numHiddenNodes +
+             " | number of output nodes:" + numOutNodes + " | population method:" + populationMethod + " | minRand:" + minRand +
+             " | maxRand:" + maxRand + " | average error cutoff:" + avgErrCut + " | maximum iterations:" + maxCycles + " |";
    }
 
 
@@ -564,7 +581,8 @@ public class AB1
  */
    public static String dumpTrainingConfigs()
    {
-      return "Training Parameters: \n| lambda:" + lambda + " | max iterations:" + maxCycles + " | error threshold:" + avgErrCut + " | random number range: [" + minRand + " , " + maxRand + "] |";
+      return "Training Parameters: \n| lambda:" + lambda + " | max iterations:" + maxCycles + " | error threshold:"
+              + avgErrCut + " | random number range: [" + minRand + " , " + maxRand + "] |";
    }
 
 

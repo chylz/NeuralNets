@@ -291,9 +291,9 @@ public class AB1
 /*
  * prints the configuration (A-B-1) of the network.
  */
-   public static String printNetworkConfig()
+   public static void printNetworkConfig()
    {
-      return "Network Configuration: " + numInputNodes + "-" + numHiddenNodes + "-" + numOutNodes;
+      System.out.println("Network Configuration: " + numInputNodes + "-" + numHiddenNodes + "-" + numOutNodes);
    }
 
 /*
@@ -306,8 +306,22 @@ public class AB1
    }
    
 /*
- * prints the 
+ * prints a small status message that indicates to the user that the program is running or training
+ * (as opposed to freezing)
  */
+   public static void printStatus()
+   {
+      System.out.println(); //whitespace for clarity
+      if(train)
+      {
+         System.out.println("Training ...");
+      }
+      else
+      {
+         System.out.println("Running ...");
+      }
+      System.out.println(); //whitespace for clarity
+   }
 
 
 

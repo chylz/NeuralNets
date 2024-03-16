@@ -21,7 +21,8 @@ public class Sigmoid implements ActivationFunction
  */
    public double derivative(double arg)
    {
-      return this.funct(arg) * (1.0-this.funct(arg)); // sigmoid derivative.
+      double farg = this.funct(arg);
+      return farg * (1.0-farg); // sigmoid derivative.
    }
 
 /*

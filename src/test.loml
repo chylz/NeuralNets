@@ -1,0 +1,19 @@
+[Config]
+lambda 0.3
+avgErrCut 0.0002
+minRand 0.1
+maxRand 1.5
+maxIterations 100000
+populationMethod 0
+train 1
+numInputNodes 2
+numHiddenNodes 2
+numOutNodes 3
+numCases 4
+printWeight 0
+printTruths 1
+runAfterTrain 1
+saveWeights 0
+activationFunction Sigmoid
+[Weights]
+filename file.txt

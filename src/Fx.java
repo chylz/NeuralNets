@@ -21,7 +21,7 @@ public class Fx implements ActivationFunction
  */
    public double derivative(double arg)
    {
-      return 1;
+      return 1.0;
    }
 
 /*

@@ -1,0 +1,21 @@
+!Config
+?numInputNodes int
+?numOutNodes int     
+?populationMethod int 
+?train int
+?minRand double     
+?maxRand double   
+?avgErrCut double
+?maxIterations int
+?printWeight int
+?printTruths int
+?runAfterTrain int
+?saveWeights int
+?activationfunction String
+?numcases int
+?lambda double
+?numHiddenNodes int
+!Weights
+?filename String
+!TruthTable
+?file String

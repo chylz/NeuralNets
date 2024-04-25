@@ -4,6 +4,11 @@
  *
  * Description: Interface that can be passed to a neural network to customize the activation function.
  *              Created to allow for an easier switch between activation functions in the neural network.
+ *
+ * Table of Contents:
+ *    double funct(double arg)
+ *    double derivative(double arg)
+ *    String toString()
  */
 
 public interface ActivationFunction

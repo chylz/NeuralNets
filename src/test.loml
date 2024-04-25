@@ -7,7 +7,7 @@ maxIterations 100000
 populationMethod 0
 train 1
 numInputNodes 2
-numHiddenNodes 2
+numHiddenNodes 5 5
 numOutNodes 3
 numCases 4
 printWeight 0
@@ -17,3 +17,6 @@ saveWeights 0
 activationFunction Sigmoid
 [Weights]
 filename file.txt
+[TruthTable]
+outputs 2B3_TT.bin
+inputs 2B3_IN.bin

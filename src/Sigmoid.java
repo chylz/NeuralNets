@@ -4,6 +4,11 @@
  *
  * Description: Sigmoid implementation of the activation function f(x).
  *              and its derivative.
+ *
+ * Table of Contents:
+ *    public double funct(double arg)
+ *    public double derivative(double arg)
+ *    public String toString()
  */
 
 public class Sigmoid implements ActivationFunction

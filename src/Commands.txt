@@ -14,8 +14,10 @@
 ?activationfunction String
 ?numcases int
 ?lambda double
-?numHiddenNodes int
+?numNodes intarr
+?keepalive int
 !Weights
 ?filename String
 !TruthTable
-?file String
+?outputs String
+?inputs String

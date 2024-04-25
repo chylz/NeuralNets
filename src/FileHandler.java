@@ -4,7 +4,16 @@ import java.io.*;
  * Author: Luke Zeng
  * Date of Creation: 2/23/2024
  *
- * Description: Handles file IO of weights and truth table for the neural network (input and output of weights).
+ * Description: Handles file IO of weights and inputs and expected outputs for the neural network.
+ * Contains utilities for storing and loading both truth tables and weights.
+ *
+ * Table of Contents:
+ *    public FileHandler(String weights)
+ *    public void changeFile(String weights)
+ *    public void writeWeights(double[][][] w, int[] numNodes, int numLayers)
+ *    public boolean loadWeights(double[][][] w, int[] numNodes, int numLayers) throws IOException
+ *    public static void encodeIns(double[][] inputs, int numInputs, int numCases, String filename) throws IOException
+ *    public static void encodeOuts(double[][] outputs, int numOutputs, int numCases, String filename) throws IOException
  */
 
 public class FileHandler
@@ -12,6 +21,7 @@ public class FileHandler
    public String network;        // network weights file name
    public DataInputStream ninp;  // file reader
    public DataOutputStream nout; // file writer (output)
+
 
 
 /*
@@ -32,75 +42,68 @@ public class FileHandler
 
 /*
  * Writes the network weights to the file.
- * Requires the input of the network configuration (A-B-C)
+ * Requires the input of the network configuration
  */
-   public void writeWeights(double[][] w1kj, double[][] w2ji, int A, int B, int C)
+   public void writeWeights(double[][][] w, int[] numNodes, int numLayers)
    {
       try
       {
          nout = new DataOutputStream(new FileOutputStream(network)); // helps with writing to file.
-         for (int k = 0; k < A; k++) // write w1kj weights to file.
+
+         for (int n = 0; n < numLayers; n++)
          {
-            for (int j = 0; j < B; j++)
+            for (int k = 0; k < numNodes[n]; k++) // write w[CON2] weights to file.
             {
-               nout.writeDouble(w1kj[k][j]);
+               for (int j = 0; j < numNodes[n+1]; j++)
+               {
+                  nout.writeDouble(w[n][k][j]);
+               }
             }
          }
 
-         for (int j = 0; j < B; j++) // write w2ji weights to file.
-         {
-            for (int i = 0; i < C; i++)
-            {
-               nout.writeDouble(w2ji[j][i]);
-            }
-         }
          nout.close();
-      }
+      } // try
       catch (IOException e)
       {
          System.out.println("Error in saving weights. Please check file permissions and presence. Program will continue to run until aborted by user");
       }
 
 
-   } // public void writeWeights(double[][] w1kj, double[][] w2ji, int A, int B, int C) throws IOException
+   } // public void writeWeights(double[][][] w, ...
 
 /*
- * Loads the weights into the given weight arrays with given network specifications (A-B-C).
- * returns an array of the network config of the weights.
+ * Loads the weights into the given weight arrays with given network configuration.
  * if the end of the reader is reached and there are still values (IE, weights file is invalid)
  * return false.
- * Will throw an error if there are not enough weights, handled in the main network file.
+ * Will throw an error if the file is not found, handled in the main network file.
  */
-   public boolean loadWeights(double[][] w1kj, double[][] w2ji, int A, int B, int C) throws IOException
+   public boolean loadWeights(double[][][] w, int[] numNodes, int numLayers) throws IOException
    {
       ninp = new DataInputStream((new FileInputStream(network))); // helps with inputting from file.
+
       boolean tooshort = false; // flag to indicate the file is too short.
-      boolean toolong = true;  // flag to see if the file is too long.
+      boolean toolong = true;   // flag to see if the file is too long.
       byte test;
+
       try
       {
-         for (int k = 0; k < A; k++)
+         for (int n = 0; n < numLayers; n++)
          {
-            for (int j = 0; j < B; j++)
+            for (int k = 0; k < numNodes[n]; k++)
             {
-               w1kj[k][j] = ninp.readDouble();
+               for (int j = 0; j < numNodes[n+1]; j++)
+               {
+                  w[n][k][j] = ninp.readDouble();
+               }
             }
          }
-
-         for (int j = 0; j < B; j++)
-         {
-            for (int i = 0; i < C; i++)
-            {
-               w2ji[j][i] = ninp.readDouble();
-            }
-         }
-      }
+      } // try
       catch (EOFException e)
       {
          tooshort = true;
       }
 
-      if(!tooshort) // if return is still true, see if there are more bytes to read.
+      if (!tooshort) // if return is still true, see if there are more bytes to read.
       {
          try
          {
@@ -110,19 +113,18 @@ public class FileHandler
          {
             toolong = false;
          }
-      }
+      } // if (!tooshort)
 
       ninp.close();
 
       return !(tooshort || toolong); // only return true if the number of weights is just right.
 
-   } // public void loadWeights(double[][] w1kj, double[][] w2ji, int A, int B, int C) throws IOException
+   } // public void loadWeights(double[][][] w, ...
 
 /*
- * encodes the given truth table into the given binary file, specifying number of inputs, outputs, and number of cases.
+ * encodes the given inputs into a binary file, given inputs, number of inputs, and number of cases.
  */
-   public static void encodeTruths(double[][] inputs, double[][] outputs, int numInputs,
-                                   int numOutputs, int numCases, String filename) throws IOException
+   public static void encodeIns(double[][] inputs, int numInputs, int numCases, String filename) throws IOException
    {
       DataOutputStream out = new DataOutputStream(new FileOutputStream(filename)); // file writer.
 
@@ -133,6 +135,16 @@ public class FileHandler
             out.writeDouble(inputs[cases][input]);
          }
       }
+      out.close();
+   } // public static void encodeIns (double[][] inputs, ...
+
+/*
+ * encodes the given truth table into the given binary file, specifying number of outputs and number of cases.
+ * returns true if the truth table dimensions and file are valid.
+ */
+   public static void encodeOuts(double[][] outputs, int numOutputs, int numCases, String filename) throws IOException
+   {
+      DataOutputStream out = new DataOutputStream(new FileOutputStream(filename)); // file writer.
 
       for (int cases = 0; cases < numCases; cases++)
       {
@@ -144,26 +156,66 @@ public class FileHandler
 
       out.close();
 
-   } // public static void encodeTruths(double[][] inputs, double[][] outputs ...
+   } // public static void encodeOuts(double[][] outputs, ...
+
 
 /*
- * takes in the file for a truth table and puts the values in the given truth table array.
- * returns the number of inputs, outputs, and cases in the truth table.
- * Can read inputs only if specified (for run-exclusive to save memory).
+ * takes in the file for inputs and puts the values in the given input array.
+ * returns true if the entire file are valid inputs.
  */
-   public static void decodeTruths(double[][] inputs, double[][] outputs, String filename,
-                                   int numInputs, int numOutputs, int numCases, boolean inonly) throws IOException
+   public static boolean decodeIns(double[][] inputs, String filename,
+                                   int numInputs, int numCases) throws IOException
    {
       DataInputStream in = new DataInputStream(new FileInputStream(filename)); // file reader.
 
-      for (int cases = 0; cases < numCases; cases++)
+      boolean tooshort = false;
+      boolean toolong = true;
+      byte test;
+
+      try
       {
-         for (int input = 0; input < numInputs; input++)
+         for (int cases = 0; cases < numCases; cases++)
          {
-            inputs[cases][input] = in.readDouble();
+            for (int input = 0; input < numInputs; input++)
+            {
+               inputs[cases][input] = in.readDouble();
+            }
          }
+
+      } // try
+      catch (IOException e)
+      {
+         tooshort = true;
       }
-      if(inonly)
+
+
+      try
+      {
+         test = in.readByte(); // test to see if file is too long (not fitting with dimensions of the outputs)
+      }
+      catch (IOException e) // if input runs out of items to read, the file is not too long.
+      {
+         toolong = false;
+      }
+
+      in.close();
+      return !(tooshort || toolong);
+   } // public static void decodeIns(double[][] inputs ...
+
+/*
+ * takes in the file for truth table of for given number of outputs and # of cases.
+ * returns true if the entire file is valid truth table.
+ */
+   public static boolean decodeOuts(double[][] outputs, String filename,
+                                   int numOutputs, int numCases) throws IOException
+   {
+      DataInputStream in = new DataInputStream(new FileInputStream(filename)); // file reader.
+
+      boolean tooshort = false;
+      boolean toolong = true;
+      byte test;
+
+      try
       {
          for (int cases = 0; cases < numCases; cases++)
          {
@@ -172,11 +224,26 @@ public class FileHandler
                outputs[cases][output] = in.readDouble();
             }
          }
+
+      } // try
+      catch (IOException e)
+      {
+         tooshort = true;
       }
 
 
+      try
+      {
+         test = in.readByte(); // test to see if file is too long (not fitting with dimensions of the outputs)
+      }
+      catch (IOException e) // if input runs out of items to read, the file is not too long.
+      {
+         toolong = false;
+      }
+
       in.close();
-   } // public static void decodeTruths(double[][] inputs, double[][] outputs ...
+      return !(tooshort || toolong);
+   } // public static void decodeOuts(double[][] outputs ...
 
 
 } // public class FileHandler

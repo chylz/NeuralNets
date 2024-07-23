@@ -17,6 +17,7 @@ public class InputValidation
    public boolean numOutDefined;
    public boolean popMethodDefined;
    public boolean trainDefined;
+   public boolean weightsFile2Defined;
    public boolean minRandDefined;
    public boolean maxRandDefined;
    public boolean avgErrCutDefined;

@@ -27,13 +27,6 @@ public class Config
    public boolean validfile;
 
 /*
- * CONSTANTS
- */
-   public final int NUMHIDDEN = 2; // for ABCD, number of hidden layers to input is 2.
-   public final int HID1 = 1;      // index of first hidden layer in terms of hidden layer size array.
-   public final int HID2 = 2;      // index of second hidden layer.
-
-/*
  * file parameters vars.
  */
    public double lambda;         // step size multiplier for gradient descent.
@@ -53,11 +46,17 @@ public class Config
    public boolean runAfterTrain; // indicates whether the network should run after training.
    public boolean saveWeights;   // indicates to save weights to the file named FILENAME.
    public int numCases;          // number of cases in the truth table.
+   public boolean multipleacts;  // indicates if multiple activation functions.
+   public int[] multiact;        // stores the number of the multi activation functions.
+   public boolean savediff;
    public int keepAlive = 0;     // number of iterations to report results after (default value of zero).
+   public int saveTime;          // how often to save weights.
    public String weightsFile;    // File for the weights of the network.
+   public String outputWeights;
    public String inputs;         // File for the inputs of the network.
    public String outputs;        // File for the expected outputs of network.
    public String actfunct;       // activation function name (lowercase)
+   public double momentum;
    public InputValidation valid; // stores input validation booleans (1 for each configuration parameter indicating it has been defined)
 
 
@@ -80,6 +79,8 @@ public class Config
       inp.close();
 
    } // public Config(String Filename) throws IOException
+
+
 
 /*
  * reads the given file in and stores the configurations for that file (after this, cannot load any more
@@ -190,7 +191,7 @@ public class Config
 
                   valid.numHiddenDefined = true;
                   break;
-               case 18:
+               case 18: // command to set keepAlive
                   keepAlive = inp.readInt();
                   break;
                case 19: // dummy command for weights section.
@@ -207,10 +208,21 @@ public class Config
 
                   valid.weightsFileDefined = true;
                   break;
-               case 21: // dummy ocmmand for truth table files (inputs and outputs) section.
+               case 21: // command for weights2 section.
+                  stringLength = inp.readInt(); // length of the weights file name.
+
+                  outputWeights = "";
+                  for (int index = 0; index < stringLength; index++)
+                  {
+                     outputWeights += inp.readChar();
+                  }
+
+                  valid.weightsFile2Defined = true;
+                  break;
+               case 22: // dummy ocmmand for truth table files (inputs and outputs) section.
                   curCommand = command;
                   break;
-               case 22: // indicates outputs file.
+               case 23: // indicates outputs file.
                   stringLength = inp.readInt(); // length of the weights file name.
 
                   outputs = "";
@@ -221,7 +233,7 @@ public class Config
 
                   valid.outputsDefined = true;
                   break;
-               case 23: // indicates inputs file
+               case 24: // indicates inputs file
                   stringLength = inp.readInt(); // length of the weights file name.
 
                   inputs = "";
@@ -231,6 +243,26 @@ public class Config
                   }
 
                   valid.inputsDefined = true;
+                  break;
+               case 25:
+                  saveTime = inp.readInt();
+                  break;
+               case 26:
+                  savediff = inp.readInt() == 1;
+                  break;
+               case 27:
+                  multipleacts = inp.readInt() == 1;
+                  break;
+               case 28:
+                  int sz = inp.readInt();
+                  multiact = new int[sz];
+                  for (int i = 0; i < sz; i++)
+                  {
+                     multiact[i] = inp.readInt();
+                  }
+                  break;
+               case 29:
+                  momentum = inp.readDouble();
                   break;
             } //switch (command)
          } // try

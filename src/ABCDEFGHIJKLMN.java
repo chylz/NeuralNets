@@ -1,3 +1,4 @@
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Date;
@@ -7,41 +8,41 @@ import java.util.Date;
  * Date of Creation: 2/7/2024
  *
  * Description: Fully connected Feed-Forward N-Layer Neural Network with Gradient Descent learning and Backpropagation Optimization.
- *              The way data is handled in this neural network is modeled after the way data is handled in
+ *              The way data is handled in this neural network is modeled after the way data are handled in
  *              a spreadsheet.
  *
  * Table of Contents:
- *    public static void main(String[] args)
- *    public static void buildNet()
- *    public static void setConfig() throws IOException
- *    public static void setHelpers()
- *    public static boolean initialize()
- *    public static void populate() throws IOException
- *    public static void train()
- *    public static void allocate()
- *    public static void run()
- *    public static boolean validate()
- *    public static void echoConfig()
- *    public static void reportResults()
- *    public static void printNetworkConfig()
- *    public static void printWeights()
- *    public static void printStatus()
- *    public static double act(double x)
- *    public static double fprime(double x)
- *    public static void recalculate(int curCase)
- *    public static void recalculateForRun()
- *    public static double theta(int j)
- *    public static void input(double[] am)
- *    public static void getOutput(double[] inp)
- *    public static void calcDeltas()
- *    public static void trainProcedure(int truthtableindex)
- *    public static double calcError()
- *    public static double caseError(int testcase)
- *    public static void populateRand()
- *    public static void populateSet(double[][] neww1kj, double[][] neww2ji)
- *    public static String dumpTruthTable()
- *    public static String dumpWeights()
- *    public static String dumpVals()
+ *    public void main(String[] args)
+ *    public void buildNet()
+ *    public void setConfig() throws IOException
+ *    public void setHelpers()
+ *    public boolean initialize()
+ *    public void populate() throws IOException
+ *    public void train()
+ *    public void allocate()
+ *    public void run()
+ *    public boolean validate()
+ *    public void echoConfig()
+ *    public void reportResults()
+ *    public void printNetworkConfig()
+ *    public void printWeights()
+ *    public void printStatus()
+ *    public double act(double x, int n)
+ *    public double fprime(double x, int n)
+ *    public void recalculate(int curCase)
+ *    public void recalculateForRun()
+ *    public double theta(int j)
+ *    public void input(double[] am)
+ *    public void getOutput(double[] inp)
+ *    public void calcDeltas()
+ *    public void trainProcedure(int truthtableindex)
+ *    public double calcError()
+ *    public double caseError(int testcase)
+ *    public void populateRand()
+ *    public void populateSet(double[][] neww1kj, double[][] neww2ji)
+ *    public String dumpTruthTable()
+ *    public String dumpWeights()
+ *    public String dumpVals()
  */
 
 
@@ -51,91 +52,113 @@ public class ABCDEFGHIJKLMN
  * Default config parameters.
  */
 
-   public static final double DEFAULT_LAMBDA = 0.3;        // default value for lambda.
-   public static final int DEFAULT_POPULATION = 0;         // default value for population method.
-   public static final double DEFAULT_MAXRAND = 1.5;       // default value for maxRand
-   public static final double DEFAULT_MINRAND = -1.5;      // default value for minRand.
-   public static final double DEFAULT_ERR = 2E-4;          // default value for avg error cutoff.
-   public static final int DEFAULT_MAXIT = 100000;         // Default value for max iterations.
-   public static final String DEFAULT_CONFIG = "test.bin"; // default config file.
-   public static final int FIRST = 0;                      // index of the input activation layer.
-   public static final int SECOND = 1;                     // index of the first hidden activation layer.
-   public static final int THIRD = 2;                      // index of the second hidden activation layer.
-   public static final int CON1 = 0;                       // index of the first connectivity layer.
-   public static final int CON2 = 1;                       // index of the second connectivity layer.
+   public final double DEFAULT_LAMBDA = 0.3;        // default value for lambda.
+   public final int DEFAULT_POPULATION = 0;         // default value for population method.
+   public final double DEFAULT_MAXRAND = 1.5;       // default value for maxRand
+   public final double DEFAULT_MINRAND = -1.5;      // default value for minRand.
+   public final double DEFAULT_ERR = 2E-4;          // default value for avg error cutoff.
+   public final int DEFAULT_MAXIT = 100000;         // Default value for max iterations.
+   public final String DEFAULT_CONFIG = "test.bin"; // default config file.
+   public final int FIRST = 0;                      // index of the input activation layer.
+   public final int SECOND = 1;                     // index of the first hidden activation layer.
+   public final int THIRD = 2;                      // index of the second hidden activation layer.
+   public final int CON1 = 0;                       // index of the first connectivity layer.
+   public final int CON2 = 1;                       // index of the second connectivity layer.
+   public final String DEFAULT_WEIGHTS1 = "file.txt"; // default weights1 val.
+   public final String DEFAULT_WEIGHTS2 = "file.txt"; // default weights2 val.
+   public final String SAVEFOLDER = "a\\"; // folder to save weights to (empty if root folder).
+   public final int MAXFILES = 20; // isn't a parameter because we will never change this value.
+   public final ActivationFunction[] ACTS = {new Sigmoid(), new HypTan(), new ReLu(), new Fx(), new LeakyReLu(), new Sinhinv()};
 
 /******
  * Configuration/validation
  */
-   public static Config cf;
-   public static InputValidation valid; // input validation.
+   public Config cf;
+   public InputValidation valid; // input validation.
 /******
  * Base network storage and activation function.
  */
-   public static double[][][] wAll;    // stores all the weights of the network.
+   public double[][][] wAll;      // stores all the weights of the network.
 
-   public static double[][] a;         // stores all the activation values.
-   public static ActivationFunction f; // activation function f(x).
-   public static double[][] outputs;   // stores the outputs from the sequential run function.
+   public double[][] a;           // stores all the activation values.
+   public ActivationFunction[] f; // activation function f(x).
+   public double[][] outputs;     // stores the outputs from the sequential run function.
+   public double[][][] momentum;  // stores the momentum value of each weight in the network.
+   public double momentumfact;    // stores the momentum factor (0-1 or more)
 
 /******
  * Configuration Parameters
  */
-   public static double lambda;         // step size multiplier for gradient descent.
-   public static int[] numNodes;        // indicates the number of nodes on each activation layer
-   public static int numLayers;         // number of layers in the n-layer network.
-   public static int numActLayers;      // number of activation layers in the n-layer network.
-   public static int outputlayer;       // indicates the output layer of the network.
-   public static int populationMethod;  // population method --> 0: randomize weights | 1: manually set weights (DEPRECATED) | 2: File IO
-   public static boolean train;         // if true, train. if false, run.
-   public static double minRand;        // minimum random threshold
-   public static double maxRand;        // maximum random threshold.
-   public static double avgErrCut;      // average error cutoff (error threshold).
-   public static int maxIterations;     // maximum iterations before cutoff.
-   public static boolean printWeight;   // flag to indicate whether to print weights before running.
-   public static boolean printTruths;   // flag to indicate whether to print the truth table.
-   public static boolean runAfterTrain; // indicates whether the network should run after training.
-   public static boolean saveWeights;   // indicates to save weights to the file named FILENAME.
-   public static int keepAlive;         // indicates the interval to report current run status.
-   public static String inFile;         // input file filename.
-   public static String outFile;        // output file filename.
-   public static FileHandler fh;        // handles the files for the network.
+   public double lambda;         // step size multiplier for gradient descent.
+   public int[] numNodes;        // indicates the number of nodes on each activation layer
+   public int numLayers;         // number of layers in the n-layer network.
+   public int numActLayers;      // number of activation layers in the n-layer network.
+   public int outputlayer;       // indicates the output layer of the network.
+   public int populationMethod;  // population method --> 0: randomize weights | 1: manually set weights (DEPRECATED) | 2: File IO
+   public boolean train;         // if true, train. if false, run.
+   public double minRand;        // minimum random threshold
+   public double maxRand;        // maximum random threshold.
+   public double avgErrCut;      // average error cutoff (error threshold).
+   public int maxIterations;     // maximum iterations before cutoff.
+   public boolean printWeight;   // flag to indicate whether to print weights before running.
+   public boolean printTruths;   // flag to indicate whether to print the truth table.
+   public boolean runAfterTrain; // indicates whether the network should run after training.
+   public boolean saveWeights;   // indicates to save weights to the file named FILENAME.
+   public boolean canstart;
+   public boolean savediff;      // indicates to save to different files, default false.
+   public int saveTime;          // every how many operations to save weights.
+   public int keepAlive;         // indicates the interval to report current run status.
+   public String inFile;         // input file filename.
+   public String outFile;        // output file filename.
 
-   public static boolean hitThreshold = false; // flag for program termination due to hitting error threshold. (default false)
-   public static boolean outofOps = false;     // flag for program termination due to running out of operations. (default false)
-   public static double errorReached;          // stores error reached at the end of training.
+   public String weights1 = DEFAULT_WEIGHTS1;       // first weights file
+   public String weights2 = DEFAULT_WEIGHTS2;       // second weights file
+
+   public FileHandler fh;        // handles the files for the network.
+
+   public boolean hitThreshold = false; // flag for program termination due to hitting error threshold. (default false)
+   public boolean outofOps = false;     // flag for program termination due to running out of operations. (default false)
+   public double errorReached;          // stores error reached at the end of training.
 
 
 
 /******
  * Truth Table Arrays
  */
-   public static double[][] givenInputs;     // truth table inputs.
-   public static double[][] expectedOutputs; // truth table outputs.
-   public static int numCases;               // number of rows (cases) in the truth table.
+   public double[][] givenInputs;     // truth table inputs.
+   public double[][] expectedOutputs; // truth table outputs.
+   public int numCases;               // number of rows (cases) in the truth table.
 
 /******
  * Training Arrays/Variables
  * Lowercase greek letter spellings (like psi) represent the lowercase greek letters.
- * Uppercase greek letter spellings (like Theta) represent the uppercase greek letters.
+ * Uppercase greek letter spellings (like theta) represent the uppercase greek letters.
  */
-   public static double[][] psi;        // psi arrays.
-   public static double[][] Theta;      // stores theta values for the network.
-   public static int iterationsReached; // the amount of iterations reached during training.
+   public double[][] psi;        // psi arrays.
+   public double[][] theta;      // stores theta values for the network.
+   public int iterationsReached; // the amount of iterations reached during training.
 
 /******
  * network frontend flags/miscellaneous
  */
-   public static int exit = 0;   // default exit value is 0 (flag to determine if initialization is valid).
-   public static long starttime; // start time of train
-   public static long endtime;   // end time of train
-   public static Date date;      // date object for runtime tracking.
+   public int exit = 0;   // default exit value is 0 (flag to determine if initialization is valid).
+   public long starttime; // start time of train
+   public long endtime;   // end time of train
+   public Date date;      // date object for runtime tracking.
 
 /*
  * main function: initializes and runs/train the network based on passed control file to command line
  * (will use default if no configuration file is provided).
  */
    public static void main(String[] args)
+   {
+      ABCDEFGHIJKLMN net = new ABCDEFGHIJKLMN(args);
+   } // public void main(String[] args)
+
+/*
+ * constructs a new n layer network with the given configuration files and runs on those configs.
+ */
+   public ABCDEFGHIJKLMN(String[] args)
    {
       if (args.length > 0) // set configuration file from command line arguments.
       {
@@ -152,7 +175,7 @@ public class ABCDEFGHIJKLMN
          }
          catch (IOException e) // catch any IO issues in the configuration file.
          {
-            System.out.println("Cannot find configuration file, or configuration file is of a corrupted format. Will use default (test.bin)");
+            System.out.println("Cannot find configuration file, or configuration file is of a corrupted format. Will use default " + DEFAULT_CONFIG);
             try
             {
                cf = new Config(DEFAULT_CONFIG); // Load the default configuration instead of the non-functional provided configuration.
@@ -181,17 +204,33 @@ public class ABCDEFGHIJKLMN
          }
       } // else
 
+   } // public ABCDEFGHIJKLMN(String[] args)
 
-   } // public static void main(String[] args)
+/*
+ * constructs a new N layer network on standby with the given configurations, can be manually adjusted.
+ */
+   public ABCDEFGHIJKLMN (String config)
+   {
+      canstart = initialize();
+      try
+      {
+         cf = new Config(config);
+      }
+      catch (IOException e)
+      {
+         System.out.println("invalid configuration file provided");
+      }
+
+
+   }
 
 
 
 /*
  * initializes and runs the program according to the current loaded configuration.
  */
-   public static void buildNet()
+   public void buildNet()
    {
-      boolean canstart; // Now don't you say? indicates that training/running can start (if it wasn't clear already)
       canstart = initialize();
 
       if (canstart)
@@ -229,10 +268,11 @@ public class ABCDEFGHIJKLMN
 
          if (saveWeights) // saves the weights to the output file if option is selected.
          {
+            fh.changeFile(weights2);
             fh.writeWeights(wAll, numNodes, numLayers);
          }
       } // if (canstart)
-   } // public static void buildNet()
+   } // public void buildNet()
 
 
 /******
@@ -243,7 +283,7 @@ public class ABCDEFGHIJKLMN
  * sets the configuration parameters of the network.
  * If no values are provided for any configuration
  */
-   public static void setConfig() throws IOException
+   public void setConfig() throws IOException
    {
       String actfunct; // temporary string to store the activation function configuration.
 
@@ -268,6 +308,72 @@ public class ABCDEFGHIJKLMN
       outFile = cf.outputs;                     // file name of the truth table.
       keepAlive = cf.keepAlive;                 // every x iterations, report error.
       actfunct = cf.actfunct;                   // set activation function.
+      saveTime = cf.saveTime;                   // when to save weights (every x operations)
+      weights1 = cf.weightsFile;                // input file weights.
+      weights2 = cf.outputWeights;              // output file weights
+      savediff = cf.savediff;                   // save differnt files.
+      momentumfact = cf.momentum;                   // momentum of the network
+
+      f = new ActivationFunction[numLayers];
+
+      if(cf.multipleacts)
+      {
+         boolean smooth = true;
+         int n = 0;
+         try
+         {
+
+            for (n = 0; n < numLayers; n++)
+            {
+               if (smooth && cf.multiact[n] >=0 && cf.multiact[n] <= 5) // activation function type is between 0 and 3, otherwise, default to sigmoid.
+               {
+                  f[n] = ACTS[cf.multiact[n]];
+               }
+               else
+               {
+                  f[n] = ACTS[0];
+               }
+
+            }
+         }
+         catch (ArrayIndexOutOfBoundsException e)
+         {
+            f[n] = ACTS[0];
+            System.out.println("your multiple activations functions did not cover the whole network. populating with sigmoid for rest of layers");
+            smooth = false;
+         }
+
+      }
+      else
+      {
+         int temp = 0; // temporary variable for indicating activation function types.
+         switch (actfunct) // 0, 1, 2, 3 indicate their respective activation function types.
+         {
+            case "sigmoid":
+               temp = 0;
+               break;
+            case "linear":
+               temp = 3;
+               break;
+            case "tangent":
+               temp = 1;
+               break;
+            case "relu":
+               temp = 2;
+               break;
+            case "leaky":
+               temp = 4;
+               break;
+            case "sinh":
+               temp = 5;
+               break;
+         } // switch (actfunct)
+
+         for (int n = 0; n < numLayers; n++)
+         {
+            f[n] = ACTS[temp];
+         }
+      }
 
       for (int n = 0; n < numActLayers; n++)
       {
@@ -278,25 +384,16 @@ public class ABCDEFGHIJKLMN
 
       if ((saveWeights && train) || populationMethod == 2) // if training & saving weights or populating weights from file
       {
-         fh = new FileHandler(cf.weightsFile); // handles the files for the project.
+         fh = new FileHandler(""); // handles the files for the project.
       }
 
-      switch (actfunct)
-      {
-         case "sigmoid":
-            f = new Sigmoid();
-            break;
-         case "linear":
-            f = new Fx();
-         case "tangent":
-            f = new HypTan();
-      } // switch (actfunct)
-   } // public static void setConfig() throws IOException
+
+   } // public void setConfig() throws IOException
 
 /*
  * sets helper variables
  */
-   public static void setHelpers()
+   public void setHelpers()
    {
       outputlayer = numActLayers-1;
    }
@@ -304,7 +401,7 @@ public class ABCDEFGHIJKLMN
 /*
  * runs allocate, populate, setconfig, and echoconfig, not necessarily in that order (makes main method less cluttered).
  */
-   public static boolean initialize()
+   public boolean initialize()
    {
       try
       {
@@ -335,7 +432,7 @@ public class ABCDEFGHIJKLMN
 /*
  * populates the arrays of the network based on the configuration parameters.
  */
-   public static void populate() throws IOException
+   public void populate() throws IOException
    {
       switch (populationMethod)                 // populates the weights of the network.
       {
@@ -343,6 +440,7 @@ public class ABCDEFGHIJKLMN
             populateRand();
             break;
          case 2:                                            // Populate from file.
+            fh.changeFile(weights1);
             if (!fh.loadWeights(wAll, numNodes, numLayers)) // loads weights from file, return true if valid weights, false if invalid.
             {
                System.out.println("CONFIG: weights file does not match with given config parameters. Populating random");
@@ -361,7 +459,9 @@ public class ABCDEFGHIJKLMN
          exit = 1; // exit code 1 is a flag that indicates that initialize didn't complete
       }
 
-      boolean outsPres = FileHandler.decodeOuts(expectedOutputs, outFile, numNodes[outputlayer], numCases); // indicate that output file is valid
+      boolean outsPres = false;
+      if(train || (!train && printTruths))
+         outsPres = FileHandler.decodeOuts(expectedOutputs, outFile, numNodes[outputlayer], numCases); // indicate that output file is valid
 
       if (train && !outsPres)
       {
@@ -375,13 +475,13 @@ public class ABCDEFGHIJKLMN
          printTruths = false;
       }
 
-   } // public static void populate() throws IOException
+   } // public void populate() throws IOException
 
 
 
 /*
  * trains the network with gradient descent learning with backpropagation optimization,
- * stores the amount of iterations the network took to train in a static field.
+ * stores the amount of iterations the network took to train in a field.
  * Will terminate if iterations exceeds maximum iterations defined in configuration parameters or if
  * an error threshold defined in configuration parameters is reached.
  *
@@ -390,13 +490,15 @@ public class ABCDEFGHIJKLMN
  *
  * Will save weights to the output file if option is selected.
  */
-   public static void train()
+   public void train()
    {
       boolean done = false;  // flag to indicate that training has finished.
       int cases;             // loop iterator for each case in training.
       int curiteration = 0;  // current iteration of the training.
       double curerror = 0.0; // current error of the network.
 
+      if (saveWeights)
+         fh.changeFile(weights2);
       while (!done)
       {
          curerror = 0.0; // reset error to 0.
@@ -427,23 +529,39 @@ public class ABCDEFGHIJKLMN
 
          if (keepAlive > 0 && (curiteration % keepAlive) == 0)
          {
-            System.out.println("TRAINING: current iteration: " + curiteration + ", error: " + curerror);
-            if(saveWeights)
+            System.out.print("TRAINING: current iteration: " + curiteration + ", error: " + curerror);
+
+            System.out.println();
+
+
+         }
+
+         if(saveWeights && saveTime>0 && (curiteration % saveTime == 0))
+         {
+
+            if (savediff)
+            {
+               fh.changeFile(SAVEFOLDER + ((curiteration / saveTime) % MAXFILES) + "-" + weights2);
+               System.out.print("SAVE: current iteration: " + curiteration + " - Saving weights to file " + fh.network + " ... ");
                fh.writeWeights(wAll, numNodes, numLayers);
+               System.out.print("done!");
+               System.out.println();
+            }
+
          }
 
       } // while (!done)
 
       iterationsReached = curiteration; // stores the iterations reached for result reporting.
       errorReached = curerror;          // stores the error reached at the end of training for result reporting.
-   } // public static void train()
+   } // public void train()
 
 
 
 /*
  * allocates the major network arrays for the network.
  */
-   public static void allocate()
+   public void allocate()
    {
       givenInputs = new double[numCases][numNodes[FIRST]];
 
@@ -451,11 +569,11 @@ public class ABCDEFGHIJKLMN
       if (train) // only allocate training-exclusive arrays if training.
       {
          psi = new double[numActLayers][];
-         Theta = new double[numActLayers-1][]; // Theta sub i values aren't needed, thus, don't allocate (numactlayer-1).
+         theta = new double[numActLayers-1][]; // theta sub i values aren't needed, thus, don't allocate (numactlayer-1).
 
-         for (int alpha = SECOND; alpha < numActLayers-1; alpha++) // Theta arrays only needed for second to second to last activation layer.
+         for (int alpha = SECOND; alpha < numActLayers-1; alpha++) // theta arrays only needed for second to second to last activation layer.
          {
-            Theta[alpha] = new double[numNodes[alpha]];
+            theta[alpha] = new double[numNodes[alpha]];
          }
 
          for (int alpha = THIRD; alpha < numActLayers; alpha++) // psi is only needed on the third and through last activation layers.
@@ -464,6 +582,12 @@ public class ABCDEFGHIJKLMN
          }
 
          expectedOutputs = new double[numCases][numNodes[outputlayer]];
+         momentum = new double[numLayers][][];
+
+         for (int n = 0; n < numLayers; n++)
+         {
+            momentum[n] = new double[numNodes[n]][numNodes[n+1]];
+         }
       } // if (train)
       else if (printTruths) // if not training, only allocate truth table if printing truth table.
       {
@@ -487,12 +611,12 @@ public class ABCDEFGHIJKLMN
       {
          a[alpha] = new double[numNodes[alpha]];
       }
-   } // public static void allocate()
+   } // public void allocate()
 
 /*
  * runs the network on all cases and stores the result.
  */
-   public static void run()
+   public void run()
    {
       for (int cases = 0; cases < numCases; cases++) // runs all the test cases from the truth table.
       {
@@ -502,13 +626,13 @@ public class ABCDEFGHIJKLMN
             outputs[cases][i] = a[outputlayer][i];
          }
       }
-   } // public static void run()
+   } // public void run()
 
 /*
  * validates that the configuration parameters are all defined and
  * reports if not all params are present (sets default vals if not present).
  */
-   public static boolean validate()
+   public boolean validate()
    {
       boolean ret = true;
       if (!valid.lambdaDefined)
@@ -603,7 +727,11 @@ public class ABCDEFGHIJKLMN
       if (!valid.actfunctDefined)
       {
          System.out.println("Config: activation function not defined; you get a sigmoid.");
-         f = new Sigmoid();
+         for (int n = 0; n < numLayers; n++)
+         {
+            f[n] = new Sigmoid();
+         }
+
       }
 
       if (!valid.inputsDefined)
@@ -631,12 +759,12 @@ public class ABCDEFGHIJKLMN
       }
 
       return ret;
-   } //public static boolean validate()
+   } //public boolean validate()
 
 /*
  * prints all the configuration parameters to the terminal.
  */
-   public static void echoConfig()
+   public void echoConfig()
    {
       printNetworkConfig(); // prints network configuration (N-Layer).
 
@@ -650,7 +778,7 @@ public class ABCDEFGHIJKLMN
 
       if (populationMethod == 2) // population method = 2 means load from file (indicate which file weights loaded from).
       {
-         System.out.println("loading weights from " + cf.weightsFile);
+         System.out.println("loading weights from " + weights1);
       }
 
       if (populationMethod == 0) // print random range if populating randomly (populationMethod = 0)
@@ -659,7 +787,24 @@ public class ABCDEFGHIJKLMN
          System.out.println("maxRand: " + maxRand);
       }
 
-      System.out.println("activation function: " + f.toString()); // prints the activation function's type.
+      if(cf.multipleacts)
+      {
+         System.out.print("activation functs: ");
+         for (int n = 0; n < numLayers; n++)
+         {
+            System.out.print(f[n].toString());
+            if (n < numLayers-1)
+            {
+               System.out.print("-");
+            }
+         }
+         System.out.println();
+      }
+      else
+      {
+         System.out.println("activation function: " + f[0].toString()); // prints the activation function's type.
+      }
+
       System.out.println("inputs file: " + inFile);               // echoes the inputs file.
 
       if (printTruths || train)
@@ -674,9 +819,13 @@ public class ABCDEFGHIJKLMN
          System.out.println("average error cutoff: " + avgErrCut);
          System.out.println("maximum iterations: " + maxIterations);
          System.out.println("lambda: " + lambda);
-         if (saveWeights) // print out message if saving weights where to save weights to.
+         System.out.println("keepAlive: " + keepAlive);
+         System.out.println("save weights: " + saveWeights);
+         System.out.println("save interval: " + saveTime);
+         System.out.println("Save to different files: " + savediff);
+         if (saveWeights && !savediff) // print out message if saving weights where to save weights to.
          {
-            System.out.println("Will save weights to " + cf.weightsFile);
+            System.out.println("Will save weights to " + weights2);
          }
       } // if (train)
 
@@ -691,7 +840,7 @@ public class ABCDEFGHIJKLMN
       {
          System.out.println("Will print truth table after run/train");
       }
-   } // public static void echoConfig()
+   } // public void echoConfig()
 
 
 
@@ -705,7 +854,7 @@ public class ABCDEFGHIJKLMN
  * If running, reports the results of the run.
  * If option is selected, print truth table.
  */
-   public static void reportResults()
+   public void reportResults()
    {
       if (train)
       {
@@ -744,7 +893,7 @@ public class ABCDEFGHIJKLMN
       if (saveWeights && train) // indicate weights have been saved to given file.
       {
          System.out.println(); // newline for fomratting.
-         System.out.println("Weights saved to file " + cf.weightsFile);
+         System.out.println("Weights saved to file " + weights2);
       }
 
       if (printTruths) // print out truth table if option is turned on.
@@ -768,12 +917,12 @@ public class ABCDEFGHIJKLMN
          }
       } // if (runAfterTrain || (!train))
 
-   } // public static void reportResults()
+   } // public void reportResults()
 
 /*
  * prints the configuration (NLayer) of the network in a pretty-printing format.
  */
-   public static void printNetworkConfig()
+   public void printNetworkConfig()
    {
       System.out.print("Network Configuration: ");
       System.out.print(numNodes[FIRST]);
@@ -786,7 +935,7 @@ public class ABCDEFGHIJKLMN
 /*
  * prints the weights of the network to the console. 
  */
-   public static void printWeights()
+   public void printWeights()
    {
       System.out.println("Weights: ");
       System.out.println(dumpWeights()); // prints a pretty-printing representation of the weights.
@@ -796,7 +945,7 @@ public class ABCDEFGHIJKLMN
  * prints a small status message that indicates to the user that the program is running or training
  * (as opposed to the program freezing)
  */
-   public static void printStatus()
+   public void printStatus()
    {
       System.out.println(); // whitespace for clarity
       if (train) // if training print a training status message.
@@ -808,7 +957,7 @@ public class ABCDEFGHIJKLMN
          System.out.println("Running ...");
       }
       System.out.println(); // whitespace for clarity
-   } // public static void printStatus()
+   } // public void printStatus()
 
 
 /******
@@ -816,19 +965,19 @@ public class ABCDEFGHIJKLMN
  */
 
 /*
- * wrapper for activation function --> f(x)
+ * wrapper for activation function --> f(x) for a given layer
  */
-   public static double act(double x)
+   public double act(double x, int n)
    {
-      return f.funct(x);
+      return f[n].funct(x);
    }
 
 /*
- * wrapper for derivative of activation function --> f'(x)
+ * wrapper for derivative of activation function --> f'(x) for a given layer
  */
-   public static double fprime(double x)
+   public double fprime(double x, int n)
    {
-      return f.derivative(x); // (f(x)*(1-f(x)) --> f prime with a sigmoid function.
+      return f[n].derivative(x); // (f(x)*(1-f(x)) --> f prime with a sigmoid function.
    }
 
 
@@ -843,7 +992,7 @@ public class ABCDEFGHIJKLMN
  * calculates psi sub i values and stores them. (used for train).
  * takes the current test case (to reference truth table to calculate psis).
  */
-   public static void recalculate(int curCase)
+   public void recalculate(int curCase)
    {
       double thetasubi;
 
@@ -851,9 +1000,9 @@ public class ABCDEFGHIJKLMN
       {
          for (int j = 0; j < numNodes[alpha]; j++) // updates each node in the 2nd hidden layer.
          {
-            Theta[alpha][j] = theta(alpha, j);
+            theta[alpha][j] = theta(alpha, j);
 
-            a[alpha][j] = act(Theta[alpha][j]);
+            a[alpha][j] = act(theta[alpha][j], alpha-1);
          }
       }
 
@@ -861,31 +1010,31 @@ public class ABCDEFGHIJKLMN
       {
          thetasubi = theta(outputlayer, i);
 
-         a[outputlayer][i] = act(thetasubi);
-         psi[outputlayer][i] = (expectedOutputs[curCase][i] - a[outputlayer][i]) * fprime(thetasubi);
+         a[outputlayer][i] = act(thetasubi, numLayers-1);
+         psi[outputlayer][i] = (expectedOutputs[curCase][i] - a[outputlayer][i]) * fprime(thetasubi, numLayers-1);
       }
-   } // public static void recalculate(int curCase)
+   } // public void recalculate(int curCase)
 
 /*
  * runs the network and stores the resulting activations based on the stored input.
  */
-   public static void recalculateForRun()
+   public void recalculateForRun()
    {
       for (int alpha = SECOND; alpha < numActLayers; alpha++) // iterate from 2nd act layer to last act layer (first doesn't need to recalculate b/c it is input!)
       {
-         for (int j = 0; j < numNodes[alpha]; j++) // updates each node in the 1st hidden layer.
+         for (int j = 0; j < numNodes[alpha]; j++) // updates each node in the activation layer.
          {
-            a[alpha][j] = act(theta(alpha, j));
+            a[alpha][j] = act(theta(alpha, j), alpha-1);
          }
       }
-   } // public static void recalculateForRun()
+   } // public void recalculateForRun()
 
 
 
 /*
  * calculates the dot product (theta) for node j on activation layer alpha.
  */
-   public static double theta(int alpha, int j)
+   public double theta(int alpha, int j)
    {
       double sum = 0.0;
       for (int k = 0; k < numNodes[alpha-1]; k++) // calculates the dot product of the input activations and the edges leading to node j.
@@ -893,26 +1042,26 @@ public class ABCDEFGHIJKLMN
          sum += a[alpha-1][k] * wAll[alpha-1][k][j]; // takes the nodes from the previous activation layer when calculating theta (weights indexed accordingly).
       }
       return sum;
-   } // public static double theta(int alpha, int j)
+   } // public double theta(int alpha, int j)
 
 
 /*
  * takes in a set of inputs and sets the current stored input to the given input.
  */
-   public static void input(double[] am)
+   public void input(double[] am)
    {
       for (int m = 0; m < numNodes[FIRST]; m++) // set input activation layer to the given inputs.
       {
          a[FIRST][m] = am[m];
       }
-   } // public static void input(double[] am)
+   } // public void input(double[] am)
 
 
 
 /*
  * runs the network on a given set of input activations.
  */
-   public static void getOutput(double[] inp)
+   public void getOutput(double[] inp)
    {
       input(inp);    // inputs the given set of values.
       recalculateForRun(); // runs the network.
@@ -928,11 +1077,11 @@ public class ABCDEFGHIJKLMN
 /*
  * calculates the delta w values for the network and applies them.
  */
-   public static void calcDeltas()
+   public void calcDeltas()
    {
       double Omega;
       double Psik;
-
+      double deltaw;
       for (int alpha = outputlayer-1;  alpha >= THIRD; alpha--) // loop from second to last act layer to third act layer.
       {
          for (int k = 0; k < numNodes[alpha]; k++)
@@ -942,10 +1091,12 @@ public class ABCDEFGHIJKLMN
             {
                Omega += psi[alpha+1][j] * wAll[alpha][k][j];
 
+               // + momentumfact * momentum[alpha][k][j];
                wAll[alpha][k][j] += lambda * a[alpha][k] * psi[alpha+1][j];
+               //momentum[alpha][k][j] = deltaw;
             }
 
-            psi[alpha][k] = Omega * fprime(Theta[alpha][k]);
+            psi[alpha][k] = Omega * fprime(theta[alpha][k], alpha);
          } // for (int j = 0; j < numNodes[alpha]; j++)
       } // for (int alpha = numLayers-1;  al >= 2; al--)
 
@@ -957,17 +1108,22 @@ public class ABCDEFGHIJKLMN
          {
             Omega += psi[THIRD][j] * wAll[CON2][k][j];
 
-            wAll[CON2][k][j] += lambda * a[SECOND][k] * psi[THIRD][j];
+            //+ momentumfact * momentum[CON2][k][j];
+
+            wAll[CON2][k][j] +=  lambda * a[SECOND][k] * psi[THIRD][j];
+            //momentum[CON2][k][j] = deltaw;
          }
 
-         Psik = Omega * fprime(Theta[SECOND][k]);
+         Psik = Omega * fprime(theta[SECOND][k], CON1);
 
          for (int m = 0; m < numNodes[FIRST]; m++)
          {
+            // + momentumfact * momentum[CON1][m][k];
             wAll[CON1][m][k] += lambda * a[FIRST][m] * Psik;
+            //momentum[CON1][m][k] = deltaw;
          }
       } // for (int k = 0; k < numNodes[SECOND]; k++)
-   } // public static void calcDeltas()
+   } // public void calcDeltas()
 
 
 
@@ -978,20 +1134,20 @@ public class ABCDEFGHIJKLMN
  *    run the network on the given truth table index.
  *    calculate and apply delta ws.
  */
-   public static void trainProcedure(int truthtableindex)
+   public void trainProcedure(int truthtableindex)
    {
       input(givenInputs[truthtableindex]);
       recalculate(truthtableindex); // runs the network.
 
       calcDeltas();
-   } // public static void trainProcedure(int truthtableindex)
+   } // public void trainProcedure(int truthtableindex)
 
 
 
 /*
  * calculates the average error bound of the network through all the test cases. (Deprecated)
  */
-   public static double calcError()
+   public double calcError()
    {
       double omegai;
       double ret = 0.0;
@@ -1008,12 +1164,12 @@ public class ABCDEFGHIJKLMN
       ret /= (double) numCases; // Divide by numCases to get average error. (note: cast to double b/c numCases is an int)
 
       return ret;
-   } // public static double calcError()
+   } // public double calcError()
 
 /*
  * calculates the error for the given test case.
  */
-   public static double caseError(int testcase)
+   public double caseError(int testcase)
    {
       double omegai;
       double ret = 0.0;
@@ -1024,7 +1180,7 @@ public class ABCDEFGHIJKLMN
          ret += 0.5 * omegai * omegai;                              // add error for this output to total error.
       }
       return ret;
-   } // public static double caseError(int testcase)
+   } // public double caseError(int testcase)
 
 
 
@@ -1035,7 +1191,7 @@ public class ABCDEFGHIJKLMN
 /*
  * populates the weights of the network with random values within the range of the configuration parameters.
  */
-   public static void populateRand()
+   public void populateRand()
    {
       double range = maxRand-minRand; // range size of the random number to help calculate range.
       double offset = minRand;        // offset of the random number to help calculate range.
@@ -1050,7 +1206,7 @@ public class ABCDEFGHIJKLMN
             }
          }
       }
-   } // public static void populateRand()
+   } // public void populateRand()
 
 
 
@@ -1062,7 +1218,7 @@ public class ABCDEFGHIJKLMN
 /*
  * returns a pretty-printing string of the truth table. 
  */
-   public static String dumpTruthTable()
+   public String dumpTruthTable()
    {
       String ret = "";
 
@@ -1083,14 +1239,14 @@ public class ABCDEFGHIJKLMN
       } // for (int cases = 0; cases < numCases; cases++)
       
       return ret;
-   } // public static String dumpTruthTable()
+   } // public String dumpTruthTable()
 
 
 
 /*
  * returns all the edge weights as a pretty printing string.
  */
-   public static String dumpWeights()
+   public String dumpWeights()
    {
       String ret = "";
 
@@ -1114,14 +1270,14 @@ public class ABCDEFGHIJKLMN
       ret += "\n";
 
       return ret;
-   } // public static String dumpWeights()
+   } // public String dumpWeights()
 
 
 
 /*
  * returns all the activation values as a string. Used for DEBUG.
  */
-   public static String dumpVals()
+   public String dumpVals()
    {
       String ret = "";
 
@@ -1135,6 +1291,12 @@ public class ABCDEFGHIJKLMN
       }
 
       return ret;
-   } // public static String dumpVals()
+   } // public String dumpVals()
+
+
+/*
+ * GAN helpers.
+ */
+
 
 } // public class ABCDEFGHIJKLMN

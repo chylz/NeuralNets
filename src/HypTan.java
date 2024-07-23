@@ -29,7 +29,7 @@ public class HypTan implements ActivationFunction
    public double derivative(double arg)
    {
       double farg = this.funct(arg);
-      return 1.0 - farg * farg; // sigmoid derivative.
+      return 1.0 - farg * farg; // tanh derivative.
    }
 
 /*

@@ -41,6 +41,30 @@ public class FileHandler
    }
 
 /*
+ * returns sum of the given array.
+ */
+   public int sum(int[] numNodes)
+   {
+      int agg = 0;
+      for (int num : numNodes)
+      {
+         agg+=num;
+      }
+      return agg;
+   }
+/*
+ * returns the weights sum of the given array
+ */
+   public int sumw (int[] numNodes)
+   {
+      int sum = 0;
+      for (int index = 0; index < numNodes.length-1; index++)
+      {
+         sum+=numNodes[index]*numNodes[index+1];
+      }
+      return sum;
+   }
+/*
  * Writes the network weights to the file.
  * Requires the input of the network configuration
  */
@@ -48,7 +72,12 @@ public class FileHandler
    {
       try
       {
-         nout = new DataOutputStream(new FileOutputStream(network)); // helps with writing to file.
+         File f = new File(network);
+         f.createNewFile();
+         nout = new DataOutputStream(new FileOutputStream(f)); // helps with writing to file.
+
+         ByteArrayOutputStream bo = new ByteArrayOutputStream();
+         DataOutputStream doe = new DataOutputStream(bo);
 
          for (int n = 0; n < numLayers; n++)
          {
@@ -56,15 +85,17 @@ public class FileHandler
             {
                for (int j = 0; j < numNodes[n+1]; j++)
                {
-                  nout.writeDouble(w[n][k][j]);
+                  doe.writeDouble(w[n][k][j]);
                }
             }
          }
 
+         nout.write(bo.toByteArray());
          nout.close();
       } // try
       catch (IOException e)
       {
+         e.printStackTrace();
          System.out.println("Error in saving weights. Please check file permissions and presence. Program will continue to run until aborted by user");
       }
 
@@ -80,6 +111,9 @@ public class FileHandler
    public boolean loadWeights(double[][][] w, int[] numNodes, int numLayers) throws IOException
    {
       ninp = new DataInputStream((new FileInputStream(network))); // helps with inputting from file.
+      byte[] b = new byte[sumw(numNodes)*8];
+      ninp.read(b);
+      ninp = new DataInputStream(new ByteArrayInputStream(b));
 
       boolean tooshort = false; // flag to indicate the file is too short.
       boolean toolong = true;   // flag to see if the file is too long.
@@ -146,6 +180,7 @@ public class FileHandler
    {
       DataOutputStream out = new DataOutputStream(new FileOutputStream(filename)); // file writer.
 
+
       for (int cases = 0; cases < numCases; cases++)
       {
          for (int output = 0; output < numOutputs; output++)
@@ -167,6 +202,10 @@ public class FileHandler
                                    int numInputs, int numCases) throws IOException
    {
       DataInputStream in = new DataInputStream(new FileInputStream(filename)); // file reader.
+      byte[] b = new byte[numInputs*numCases*Double.BYTES]; // size of input file.
+      in.read(b);
+
+      in = new DataInputStream(new ByteArrayInputStream(b));
 
       boolean tooshort = false;
       boolean toolong = true;
@@ -210,6 +249,11 @@ public class FileHandler
                                    int numOutputs, int numCases) throws IOException
    {
       DataInputStream in = new DataInputStream(new FileInputStream(filename)); // file reader.
+      byte[] b = new byte[numOutputs*numCases*Double.BYTES];
+      in.read(b);
+
+      in = new DataInputStream(new ByteArrayInputStream(b));
+
 
       boolean tooshort = false;
       boolean toolong = true;

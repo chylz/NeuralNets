@@ -16,8 +16,14 @@
 ?lambda double
 ?numNodes intarr
 ?keepalive int
-!Weights
+?numWeights
 ?filename String
-!TruthTable
+?file2 String
+?numTruthTable
 ?outputs String
 ?inputs String
+?saveTime int
+?savediff int
+?acttype int
+?multiact intarr
+?momentum double

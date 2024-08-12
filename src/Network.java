@@ -10,6 +10,7 @@ import java.util.Date;
  * Description: Fully connected Feed-Forward N-Layer Neural Network with Gradient Descent learning and Backpropagation Optimization.
  *              The way data is handled in this neural network is modeled after the way data are handled in
  *              a spreadsheet.
+ *              7/16/2024: started development on Generative Adversarial Network Tools.
  *
  * Table of Contents:
  *    public void main(String[] args)
@@ -46,7 +47,7 @@ import java.util.Date;
  */
 
 
-public class ABCDEFGHIJKLMN
+public class Network
 {
 /******
  * Default config parameters.
@@ -82,8 +83,11 @@ public class ABCDEFGHIJKLMN
 
    public double[][] a;           // stores all the activation values.
    public ActivationFunction[] f; // activation function f(x).
+   public Loss loss;
    public double[][] outputs;     // stores the outputs from the sequential run function.
    public double[][][] momentum;  // stores the momentum value of each weight in the network.
+   public double[][][] dWeight;   // stores the changes in weights.
+   public int batchSize;          // size of batches.
    public double momentumfact;    // stores the momentum factor (0-1 or more)
 
 /******
@@ -120,6 +124,12 @@ public class ABCDEFGHIJKLMN
    public boolean outofOps = false;     // flag for program termination due to running out of operations. (default false)
    public double errorReached;          // stores error reached at the end of training.
 
+/*
+ * extra GAN parameters.
+ */
+   public boolean passPsi;
+   public double[] Omeg;
+
 
 
 /******
@@ -152,13 +162,13 @@ public class ABCDEFGHIJKLMN
  */
    public static void main(String[] args)
    {
-      ABCDEFGHIJKLMN net = new ABCDEFGHIJKLMN(args);
+      Network net = new Network(args);
    } // public void main(String[] args)
 
 /*
  * constructs a new n layer network with the given configuration files and runs on those configs.
  */
-   public ABCDEFGHIJKLMN(String[] args)
+   public Network(String[] args)
    {
       if (args.length > 0) // set configuration file from command line arguments.
       {
@@ -204,23 +214,15 @@ public class ABCDEFGHIJKLMN
          }
       } // else
 
-   } // public ABCDEFGHIJKLMN(String[] args)
+   } // public Network(String[] args)
 
 /*
  * constructs a new N layer network on standby with the given configurations, can be manually adjusted.
  */
-   public ABCDEFGHIJKLMN (String config)
+   public Network (Config config)
    {
-      canstart = initialize();
-      try
-      {
-         cf = new Config(config);
-      }
-      catch (IOException e)
-      {
-         System.out.println("invalid configuration file provided");
-      }
-
+      cf = config;
+      canstart = initialize(1);
 
    }
 
@@ -231,7 +233,7 @@ public class ABCDEFGHIJKLMN
  */
    public void buildNet()
    {
-      canstart = initialize();
+      canstart = initialize(0); // initialize with code 0 (check everything)
 
       if (canstart)
       {
@@ -313,6 +315,7 @@ public class ABCDEFGHIJKLMN
       weights2 = cf.outputWeights;              // output file weights
       savediff = cf.savediff;                   // save differnt files.
       momentumfact = cf.momentum;                   // momentum of the network
+      loss = cf.loss;
 
       f = new ActivationFunction[numLayers];
 
@@ -401,14 +404,14 @@ public class ABCDEFGHIJKLMN
 /*
  * runs allocate, populate, setconfig, and echoconfig, not necessarily in that order (makes main method less cluttered).
  */
-   public boolean initialize()
+   public boolean initialize(int code)
    {
       try
       {
          setConfig(); // set configurations.
          setHelpers();
 
-         if(validate()) // only keep initializing if validation passes
+         if(code == 1 || validate()) // only keep initializing if validation passes or developer code passed (1)
          {
             echoConfig();
             allocate();
@@ -427,7 +430,7 @@ public class ABCDEFGHIJKLMN
       }
 
       return exit == 0; // initialize only passes if exit code is 0 (any exit code other than zero means validate didn't pass).
-   } // public boolean initialize()
+   } // public boolean initialize(int code)
 
 /*
  * populates the arrays of the network based on the configuration parameters.
@@ -542,11 +545,11 @@ public class ABCDEFGHIJKLMN
             if (savediff)
             {
                fh.changeFile(SAVEFOLDER + ((curiteration / saveTime) % MAXFILES) + "-" + weights2);
-               System.out.print("SAVE: current iteration: " + curiteration + " - Saving weights to file " + fh.network + " ... ");
-               fh.writeWeights(wAll, numNodes, numLayers);
-               System.out.print("done!");
-               System.out.println();
             }
+            System.out.print("SAVE: current iteration: " + curiteration + " - Saving weights to file " + fh.network + " ... ");
+            fh.writeWeights(wAll, numNodes, numLayers);
+            System.out.print("done!");
+            System.out.println();
 
          }
 
@@ -576,7 +579,7 @@ public class ABCDEFGHIJKLMN
             theta[alpha] = new double[numNodes[alpha]];
          }
 
-         for (int alpha = THIRD; alpha < numActLayers; alpha++) // psi is only needed on the third and through last activation layers.
+         for (int alpha = THIRD; alpha < numActLayers; alpha++) // psi is only needed on the third through last activation layers.
          {
             psi[alpha] = new double[numNodes[alpha]];
          }
@@ -610,6 +613,11 @@ public class ABCDEFGHIJKLMN
       for (int alpha = 0; alpha < numActLayers; alpha++)
       {
          a[alpha] = new double[numNodes[alpha]];
+      }
+
+      if (passPsi)
+      {
+         Omeg = new double[numNodes[FIRST]];
       }
    } // public void allocate()
 
@@ -1298,5 +1306,225 @@ public class ABCDEFGHIJKLMN
  * GAN helpers.
  */
 
+/*
+ * gets the activations on layer n (n is 0 indexed).
+ */
+   public double[] getLayer(int n)
+   {
+      return a[n];
+   }
 
-} // public class ABCDEFGHIJKLMN
+/*
+ * gets the output layer for easy processing.
+ */
+   public double[] getOutput()
+   {
+      return a[outputlayer];
+   }
+
+/*
+ * saves weights.
+ */
+   public void saveWeights(String file)
+   {
+
+      fh.changeFile(file);
+
+      System.out.print("Saving weights to file " + fh.network + " ... ");
+      fh.writeWeights(wAll, numNodes, numLayers);
+      System.out.print("done!");
+      System.out.println();
+
+   }
+
+/*
+ * feed forward calculations with customized loss functions.
+ */
+   public void recalculateDisc(double expected, Loss lmao)
+   {
+      double thetasubi;
+
+      for (int alpha = SECOND; alpha < numActLayers-1; alpha++) // iterate from 2nd act layer to second to last act layer (first doesn't need to recalculate b/c it is input!)
+      {
+         for (int j = 0; j < numNodes[alpha]; j++) // updates each node in the 2nd hidden layer.
+         {
+            theta[alpha][j] = theta(alpha, j);
+
+            a[alpha][j] = act(theta[alpha][j], alpha-1);
+         }
+      }
+
+      for (int i = 0; i < numNodes[outputlayer]; i++) // updates each node in the output layer and stores psis for output layer
+      {
+         thetasubi = theta(outputlayer, i);
+
+         a[outputlayer][i] = act(thetasubi, numLayers-1);
+         psi[outputlayer][i] = (lmao.deriv(a[outputlayer][i], expected)) * fprime(thetasubi, numLayers-1);
+      }
+   } // public void recalculate(int curCase)
+
+
+/*
+ * feed forward calculations with customized loss functions.
+ */
+   public void recalculateGen()
+   {
+      double thetasubi;
+
+      for (int alpha = SECOND; alpha < numActLayers-1; alpha++) // iterate from 2nd act layer to second to last act layer (first doesn't need to recalculate b/c it is input!)
+      {
+         for (int j = 0; j < numNodes[alpha]; j++) // updates each node in the 2nd hidden layer.
+         {
+            theta[alpha][j] = theta(alpha, j);
+
+            a[alpha][j] = act(theta[alpha][j], alpha-1);
+         }
+      }
+
+      for (int i = 0; i < numNodes[outputlayer]; i++) // updates each node in the output layer and stores psis for output layer
+      {
+         thetasubi = theta(outputlayer, i);
+
+         a[outputlayer][i] = act(thetasubi, numLayers-1);
+         psi[outputlayer][i] = Omeg[i] * fprime(thetasubi, numLayers-1);
+      }
+   } // public void recalculate(int curCase)
+
+/*
+ * Calculates delta w values for each array value and inserts them into gradient average array (backprop).
+ * For discriminator, also passes Omega values.
+ * (NOTE!! : DO NOT RUN WITHOUT PREVIOUS DATA on previous layers)
+ */
+   public void calcDiscDeltas()
+   {
+      double Omega;
+      double Psik;
+      double deltaw;
+      double Omegam;
+      for (int alpha = outputlayer-1;  alpha >= THIRD; alpha--) // loop from second to last act layer to third act layer.
+      {
+         for (int k = 0; k < numNodes[alpha]; k++)
+         {
+            Omega = 0.0;
+            for (int j = 0; j < numNodes[alpha+1]; j++)
+            {
+               Omega += psi[alpha+1][j] * wAll[alpha][k][j];
+
+               // + momentumfact * momentum[alpha][k][j];
+               dWeight[alpha][k][j] += lambda * a[alpha][k] * psi[alpha+1][j];
+               //momentum[alpha][k][j] = deltaw;
+            }
+
+            psi[alpha][k] = Omega * fprime(theta[alpha][k], alpha);
+         } // for (int j = 0; j < numNodes[alpha]; j++)
+      } // for (int alpha = numLayers-1;  al >= 2; al--)
+
+
+      for (int m = 0; m < numNodes[FIRST]; m++) // reset passed Omegas.
+      {
+         Omeg[m] = 0.0;
+      }
+
+      for (int k = 0; k < numNodes[SECOND]; k++)
+      {
+         Omega = 0.0;
+         for (int j = 0; j < numNodes[THIRD]; j++)
+         {
+            Omega += psi[THIRD][j] * wAll[CON2][k][j];
+
+            //+ momentumfact * momentum[CON2][k][j];
+
+            dWeight[CON2][k][j] +=  lambda * a[SECOND][k] * psi[THIRD][j];
+            //momentum[CON2][k][j] = deltaw;
+         }
+
+         Psik = Omega * fprime(theta[SECOND][k], CON1);
+
+         for (int m = 0; m < numNodes[FIRST]; m++)
+         {
+            // + momentumfact * momentum[CON1][m][k];
+            Omeg[m] += Psik * wAll[CON1][m][k];
+
+            dWeight[CON1][m][k] += lambda * a[FIRST][m] * Psik;
+
+            //momentum[CON1][m][k] = deltaw;
+         }
+      } // for (int k = 0; k < numNodes[SECOND]; k++)
+   } // public void CalcDiscUp
+
+   /*
+    * Calculates delta w values for each array value and inserts them into gradient average array (backprop).
+    * For Generator, nothing special except minibatch.
+    * (NOTE!! : DO NOT RUN WITHOUT PREVIOUS DATA on previous layers)
+    */
+   public void calcGenDeltas()
+   {
+      double Omega;
+      double Psik;
+      double deltaw;
+      double Omegam;
+      for (int alpha = outputlayer-1;  alpha >= THIRD; alpha--) // loop from second to last act layer to third act layer.
+      {
+         for (int k = 0; k < numNodes[alpha]; k++)
+         {
+            Omega = 0.0;
+            for (int j = 0; j < numNodes[alpha+1]; j++)
+            {
+               Omega += psi[alpha+1][j] * wAll[alpha][k][j];
+
+               // + momentumfact * momentum[alpha][k][j];
+               dWeight[alpha][k][j] += lambda * a[alpha][k] * psi[alpha+1][j];
+               //momentum[alpha][k][j] = deltaw;
+            }
+
+            psi[alpha][k] = Omega * fprime(theta[alpha][k], alpha);
+         } // for (int j = 0; j < numNodes[alpha]; j++)
+      } // for (int alpha = numLayers-1;  al >= 2; al--)
+
+
+      for (int k = 0; k < numNodes[SECOND]; k++)
+      {
+         Omega = 0.0;
+         for (int j = 0; j < numNodes[THIRD]; j++)
+         {
+            Omega += psi[THIRD][j] * wAll[CON2][k][j];
+
+            //+ momentumfact * momentum[CON2][k][j];
+
+            dWeight[CON2][k][j] +=  lambda * a[SECOND][k] * psi[THIRD][j];
+            //momentum[CON2][k][j] = deltaw;
+         }
+
+         Psik = Omega * fprime(theta[SECOND][k], CON1);
+
+         for (int m = 0; m < numNodes[FIRST]; m++)
+         {
+            // + momentumfact * momentum[CON1][m][k];
+
+            dWeight[CON1][m][k] += lambda * a[FIRST][m] * Psik;
+
+            //momentum[CON1][m][k] = deltaw;
+         }
+      } // for (int k = 0; k < numNodes[SECOND]; k++)
+   } // public void CalcDiscUp
+
+
+/*
+ * applies the average dWeights of the given batch size - part of stochastic minibatch Gradient Descent.
+ */
+   public void applyDeltas()
+   {
+      for (int alpha = FIRST; alpha < outputlayer-1; alpha++)
+      {
+         for (int k = 0; k < numNodes[alpha]; k++)
+         {
+            for (int j = 0; j < numNodes[alpha+1]; k++)
+            {
+               wAll[alpha][k][j] += dWeight[alpha][k][j] / ((double) batchSize);
+            }
+         }
+      }
+   }
+
+
+} // public class Network

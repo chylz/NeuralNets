@@ -46,6 +46,7 @@ public class Config
    public boolean runAfterTrain; // indicates whether the network should run after training.
    public boolean saveWeights;   // indicates to save weights to the file named FILENAME.
    public int numCases;          // number of cases in the truth table.
+   public Loss loss = new BasicLoss();                // loss function.
    public boolean multipleacts;  // indicates if multiple activation functions.
    public int[] multiact;        // stores the number of the multi activation functions.
    public boolean savediff;
